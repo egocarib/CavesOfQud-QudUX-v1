@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<objects>
+  <object Name="Egocarib_QudUX_Mod_Generic_Script_Loader_Item" Inherits="Item">
+    <part Name="Render" DisplayName="[Dummy Item]" />
+    <part Name="Egcb_UILoader" />
+    <tag Name="ExcludeFromDynamicEncounters" />
+  </object>
+</objects>
