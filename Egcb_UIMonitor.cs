@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using XRL.Core;
+using XRL.World.Parts;
 
 namespace Egocarib.Code
 {
@@ -11,6 +14,8 @@ namespace Egocarib.Code
         private string UIMode;
         private Egcb_JournalExtender JournalExtender;
         private Egcb_InventoryExtender InventoryExtender;
+        private List<XRL.World.GameObject> gameObjsWithTrackingPart = new List<XRL.World.GameObject>();
+        private XRL.World.GameObject latestGoWithTrackingPart = null;
 
         public bool Initialize()
         {
@@ -65,11 +70,23 @@ namespace Egocarib.Code
             Debug.Log("QudUX Mod: UI Monitor Activated.");
             for (;;)
             {
+                if (XRLCore.Core.Game?.Player?.Body != this.latestGoWithTrackingPart && XRLCore.Core.Game?.Player?.Body != null && !gameObjsWithTrackingPart.CleanContains(XRLCore.Core.Game.Player.Body))
+                {
+                    //Debug.Log("QudUX Mod: Initialized location text analyzer for quests and conversations.");
+                    XRL.World.GameObject player = XRLCore.Core.Game.Player.Body;
+                    this.latestGoWithTrackingPart = player;
+                    gameObjsWithTrackingPart.Add(player);
+                    //add part to player (or dominated entity, whatever, etc)
+                    if (!player.HasPart("Egcb_PlayerUIHelper")) //may already have the part if it was serialized on the player
+                    {
+                        player.AddPart<Egcb_PlayerUIHelper>(true);
+                    }
+                }
                 if (GameManager.Instance.CurrentGameView == "Inventory" || GameManager.Instance.CurrentGameView == "Journal")
                 {
                     this.UIMode = GameManager.Instance.CurrentGameView;
                     //TODO: should check whether the overlay inventory option is enabled, and don't do anything if it is.
-                    Debug.Log("QudUX Mod: Detected " + this.UIMode + " menu");
+                    //Debug.Log("QudUX Mod: Detected " + this.UIMode + " menu");
                     if (this.UIMode == "Journal")
                     {
                         this.JournalExtender = new Egcb_JournalExtender();
