@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using Egocarib.Code;
-using XRL.UI; //popup.show
 using System.Collections.Generic;
 using Qud.API;
 using XRL.Language;
@@ -11,11 +9,6 @@ namespace XRL.World.Parts
 {
     public class Egcb_PlayerUIHelper : IPart
     {
-        public Egcb_PlayerUIHelper()
-        {
-
-        }
-
         public override bool AllowStaticRegistration()
         {
             return true;

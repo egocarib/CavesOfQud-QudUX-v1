@@ -15,6 +15,7 @@ namespace Egocarib.Code
         private Dictionary<string, string> CachedValuePerLbStrings = new Dictionary<string, string>();
         private string DisplayMode = "Default";
         private List<GameObject> InventoryList = new List<GameObject>();
+        private NalathniAppraiseExtender NalathniAppraiser = new NalathniAppraiseExtender();
 
         public class Coords
         {
@@ -50,6 +51,10 @@ namespace Egocarib.Code
 
         public void UpdateScreen()
         {
+            if (this.NalathniAppraiser.PreventPlayerAppraisal)
+            {
+                return;
+            }
             this.LoadInventoryData();
             object bufferCS = TextConsole.BufferCS;
             lock (bufferCS) //acquire a lock on the screenbuffer to avoid interwoven rendering with other processes
@@ -98,6 +103,10 @@ namespace Egocarib.Code
         {
             if (this.DisplayMode == "Default")
             {
+                if (this.NalathniAppraiser.PreventPlayerAppraisal)
+                {
+                    return;
+                }
                 this.DisplayMode = "ValuePerPound";
             }
             else if (this.DisplayMode == "ValuePerPound")
@@ -109,7 +118,6 @@ namespace Egocarib.Code
                 }
             }
         }
-
 
         public void LoadInventoryData()
         {
@@ -145,23 +153,32 @@ namespace Egocarib.Code
                     string strippedConstrainedName = item.GetCachedDisplayNameStripped().Substring(0, Math.Min(item.GetCachedDisplayNameStripped().Length, 60)).PadRight(60);
                     if (!this.CachedValuePerLbStrings.ContainsKey(strippedConstrainedName))
                     {
-                        string valueString = String.Empty;
-                        int weight = (item.pPhysics != null) ? item.pPhysics.Weight : 0;
-                        if (weight <= 0)
-                        {
-                            valueString = "&Kweightless";
-                        }
-                        else
-                        {
-                            double itemValue = this.GetItemPricePer(item) * (double)item.Count;
-                            double perPoundValue = itemValue / (double)weight;
-                            int finalValue = (int)Math.Round(perPoundValue, MidpointRounding.AwayFromZero);
-                            valueString = "&b$&c" + finalValue + "&y / lb.";
-                        }
-                        this.CachedValuePerLbStrings.Add(strippedConstrainedName, valueString);
+                        this.CachedValuePerLbStrings.Add(strippedConstrainedName, this.GetItemValueString(item));
                     }
                 }
             }
+        }
+
+        public string GetItemValueString(GameObject item)
+        {
+            string valueString = String.Empty;
+            int weight = (item.pPhysics != null) ? item.pPhysics.Weight : 0;
+            if (weight <= 0)
+            {
+                valueString = "&Kweightless";
+            }
+            else
+            {
+                double itemValue = this.GetItemPricePer(item) * (double)item.Count;
+                double perPoundValue = itemValue / (double)weight;
+                int finalValue = this.NalathniAppraiser.Approximate(perPoundValue); //Try to use the Nalathni Approximate method first, in case the player has NalathniDragon's Appraisal mod installed.
+                if (finalValue < 0) //Fall back to normal integer rounding if the player doesn't have that mod installed (or if it returned a negative [intended to represent fractional] value)
+                {
+                    finalValue = (int)Math.Round(perPoundValue, MidpointRounding.AwayFromZero);
+                }
+                valueString = "&b$&c" + finalValue + "&y / lb.";
+            }
+            return valueString;
         }
 
         public string PadColorStringLeft(string colorString, int desiredLength)
