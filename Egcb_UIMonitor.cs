@@ -81,7 +81,7 @@ namespace Egocarib.Code
                     {
                         player.AddPart<Egcb_PlayerUIHelper>(true);
                     }
-                    NalathniAppraiseExtender appraiseLoader = new NalathniAppraiseExtender(); //initialize a new NalathniAppraiseExtender object to complete initial analysis and set up static values
+                    NalathniAppraiseConnector appraiseLoader = new NalathniAppraiseConnector(); //initialize a new NalathniAppraiseExtender object to complete initial analysis and set up static values
                 }
                 if (GameManager.Instance.CurrentGameView == "Inventory" || GameManager.Instance.CurrentGameView == "Journal")
                 {

@@ -15,7 +15,7 @@ namespace Egocarib.Code
         private Dictionary<string, string> CachedValuePerLbStrings = new Dictionary<string, string>();
         private string DisplayMode = "Default";
         private List<GameObject> InventoryList = new List<GameObject>();
-        private NalathniAppraiseExtender NalathniAppraiser = new NalathniAppraiseExtender();
+        private NalathniAppraiseConnector NalathniAppraiser = new NalathniAppraiseConnector();
 
         public class Coords
         {
