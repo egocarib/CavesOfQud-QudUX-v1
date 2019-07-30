@@ -39,7 +39,14 @@ namespace XRL.World.Parts
                 Conversation convo = E.GetParameter<Conversation>("Conversation");
                 if (questID == string.Empty || XRLCore.Core.Game.FinishedQuests.ContainsKey(questID)) //speaker has no dynamic quests
                 {
-                    this.AddChoiceToIdentifyQuestGivers(convo, speaker);
+                    try
+                    {
+                        this.AddChoiceToIdentifyQuestGivers(convo, speaker);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.Log("QudUX Mod: Encountered exception while adding conversation choices to identify village quest givers.\nException details: \n" + ex.ToString());
+                    }
                 }
                 else //speaker does have dynamic quest
                 {
