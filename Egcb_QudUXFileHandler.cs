@@ -111,7 +111,7 @@ namespace Egocarib.Code
             return CategorizedData;
         }
 
-        //Old method below - used to save and load this data to file, but that was not idea. Switched to native game serialization instead.
+        //Old method below - used to save and load this data to file, but that was not ideal. Switched to native game serialization instead.
 
         //public static bool SaveOriginalAbilityDescriptions(Dictionary<Guid, string> abilityDescriptions)
         //{
