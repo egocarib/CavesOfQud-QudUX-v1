@@ -15,6 +15,7 @@ namespace Egocarib.Code
         private Egcb_JournalExtender JournalExtender;
         private Egcb_InventoryExtender InventoryExtender;
         private Egcb_ReviewCharExtender ReviewCharExtender;
+        private Egcb_AbilityManagerExtender AbilityManagerExtender;
         private List<XRL.World.GameObject> gameObjsWithTrackingPart = new List<XRL.World.GameObject>();
         private XRL.World.GameObject latestGoWithTrackingPart = null;
         private readonly Dictionary<string, float> coroutineYieldTimes = new Dictionary<string, float>()
@@ -67,6 +68,7 @@ namespace Egocarib.Code
                 this.JournalExtender = null;
                 this.InventoryExtender = null;
                 this.ReviewCharExtender = null;
+                this.AbilityManagerExtender = null;
                 if (this.UIMode == "WorldCreationProgress")
                 {
                     Egcb_ReviewCharExtender.ApplyCustomTile(); //leaving world creation progress screen - apply custom tile now before player is inserted into starting village
@@ -127,7 +129,10 @@ namespace Egocarib.Code
             Debug.Log("QudUX Mod: UI Monitor Activated.");
             for (;;)
             {
-                if (XRLCore.Core.Game?.Player?.Body != this.latestGoWithTrackingPart && XRLCore.Core.Game?.Player?.Body != null && !gameObjsWithTrackingPart.CleanContains(XRLCore.Core.Game.Player.Body))
+                if (XRLCore.Core.Game?.Player?.Body != this.latestGoWithTrackingPart
+                    && XRLCore.Core.Game?.Player?.Body != null
+                    && !gameObjsWithTrackingPart.CleanContains(XRLCore.Core.Game.Player.Body)
+                    && !XRLCore.Core.Game.Player.Body.IsNowhere()) //IsNowhere forces us to wait for player to be initialized (otherwise duplicate part won't be loaded from serialization yet and we erroneously add another)
                 {
                     XRL.World.GameObject player = XRLCore.Core.Game.Player.Body;
                     this.latestGoWithTrackingPart = player;
@@ -142,7 +147,8 @@ namespace Egocarib.Code
                 if (GameManager.Instance.CurrentGameView == "Inventory"
                     || GameManager.Instance.CurrentGameView == "Journal"
                     || GameManager.Instance.CurrentGameView == "ReviewCharacter"
-                    || GameManager.Instance.CurrentGameView == "WorldCreationProgress")
+                    || GameManager.Instance.CurrentGameView == "WorldCreationProgress"
+                    || GameManager.Instance.CurrentGameView == "AbilityManager")
                 {
                     this.UIMode = GameManager.Instance.CurrentGameView;
                     //TODO: should check whether the overlay inventory option is enabled, and don't do anything if it is.
@@ -161,6 +167,12 @@ namespace Egocarib.Code
                     else if (this.UIMode == "WorldCreationProgress")
                     {
                         //Do nothing here (we're only tracking for when this state is removed)
+                    }
+                    else if (this.UIMode == "AbilityManager")
+                    {
+                        this.AbilityManagerExtender = new Egcb_AbilityManagerExtender();
+                        this.AbilityManagerExtender.UpdateAbilityDescriptions();
+                        //this is all we need to do for this one - a single update on menu open. No active monitoring/changes in the menu itself.
                     }
                     this.enabled = true;
                     do { yield return new WaitForSeconds(0.1f); } while (this.enabled == true);

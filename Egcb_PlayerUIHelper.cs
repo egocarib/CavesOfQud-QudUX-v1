@@ -10,16 +10,48 @@ using System;
 
 namespace XRL.World.Parts
 {
+    [Serializable]
     public class Egcb_PlayerUIHelper : IPart
     {
         public static GameObject PlayerBody = null;
         public static GameObject ConversationPartner = null;
         public static List<GameObject> NewQuestHolders = new List<GameObject>();
         public static List<GameObject> ActiveQuestHolders = new List<GameObject>();
+        public Dictionary<Guid, string> DefaultAbilityDescriptions = null;
 
         public override bool AllowStaticRegistration()
         {
             return true;
+        }
+
+        public override void SaveData(SerializationWriter Writer)
+        {
+            base.SaveData(Writer);
+            Writer.Write(this.DefaultAbilityDescriptions == null ? 0 : this.DefaultAbilityDescriptions.Count);
+            foreach (KeyValuePair<Guid, string> kv in this.DefaultAbilityDescriptions)
+            {
+                Writer.Write(kv.Key);
+                Writer.Write(kv.Value);
+            }
+        }
+
+        // Load data is called when loading the save game, we also need to override this
+        public override void LoadData(SerializationReader Reader)
+        {
+            base.LoadData(Reader);
+            int count = Reader.ReadInt32();
+            if (count <= 0)
+            {
+                this.DefaultAbilityDescriptions = null;
+                return;
+            }
+            this.DefaultAbilityDescriptions = new Dictionary<Guid, string>();
+            for (int i = 0; i < count; i++)
+            {
+                Guid guid = Reader.ReadGuid();
+                string description = Reader.ReadString();
+                this.DefaultAbilityDescriptions.Add(guid, description);
+            }
         }
 
         public override void Register(GameObject Object)
@@ -174,12 +206,12 @@ namespace XRL.World.Parts
 
         public static bool ApplyNewQuestGiverEffect()
         {
-            Debug.Log("QudUX Mod: ApplyNewQuestGiverEffect()");
+            //Debug.Log("QudUX Mod: ApplyNewQuestGiverEffect()");
             return ApplyQuestGiverEffect(Egcb_PlayerUIHelper.NewQuestHolders);
         }
         public static bool ApplyActiveQuestGiverEffect()
         {
-            Debug.Log("QudUX Mod: ApplyActiveQuestGiverEffect()");
+            //Debug.Log("QudUX Mod: ApplyActiveQuestGiverEffect()");
             return ApplyQuestGiverEffect(Egcb_PlayerUIHelper.ActiveQuestHolders);
         }
 
