@@ -148,7 +148,8 @@ namespace Egocarib.Code
                     || GameManager.Instance.CurrentGameView == "Journal"
                     || GameManager.Instance.CurrentGameView == "ReviewCharacter"
                     || GameManager.Instance.CurrentGameView == "WorldCreationProgress"
-                    || GameManager.Instance.CurrentGameView == "AbilityManager")
+                    || GameManager.Instance.CurrentGameView == "AbilityManager"
+                    || GameManager.Instance.CurrentGameView == "Trade")
                 {
                     this.UIMode = GameManager.Instance.CurrentGameView;
                     //TODO: should check whether the overlay inventory option is enabled, and don't do anything if it is.
@@ -159,6 +160,11 @@ namespace Egocarib.Code
                     else if (this.UIMode == "Inventory")
                     {
                         this.InventoryExtender = new Egcb_InventoryExtender();
+                    }
+                    else if (this.UIMode == "Trade")
+                    {
+                        Egcb_PlayerUIHelper.SetTraderInteraction();
+                        //one time call - don't need to monitor the menu itself
                     }
                     else if (this.UIMode == "ReviewCharacter")
                     {
@@ -179,7 +185,7 @@ namespace Egocarib.Code
                 }
                 if (!this.coroutineYieldTimes.ContainsKey(GameManager.Instance.CurrentGameView))
                 {
-                    this.coroutineYieldTimes.Add(GameManager.Instance.CurrentGameView, 1f);
+                    this.coroutineYieldTimes.Add(GameManager.Instance.CurrentGameView, 0.75f);
                 }
                 yield return new WaitForSeconds(this.coroutineYieldTimes[GameManager.Instance.CurrentGameView]);
             }

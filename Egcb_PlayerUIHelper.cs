@@ -7,6 +7,8 @@ using XRL.Rules;
 using XRL.World.Parts.Effects;
 using XRL.UI;
 using System;
+using System.Text.RegularExpressions;
+using XRL.World.Encounters.EncounterObjectBuilders;
 
 namespace XRL.World.Parts
 {
@@ -17,7 +19,27 @@ namespace XRL.World.Parts
         public static GameObject ConversationPartner = null;
         public static List<GameObject> NewQuestHolders = new List<GameObject>();
         public static List<GameObject> ActiveQuestHolders = new List<GameObject>();
+        public static List<GameObject> ZoneTradersTradedWith = new List<GameObject>();
+        public static string CurrentInteractionZoneID = string.Empty;
         public Dictionary<Guid, string> DefaultAbilityDescriptions = null;
+        private string _colorMatchPattern = string.Empty;
+
+        public string ColorMatchPattern
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(this._colorMatchPattern))
+                {
+                    this._colorMatchPattern = "&[";
+                    foreach (KeyValuePair<char, ushort> color in ConsoleLib.Console.ColorUtility.CharToColorMap)
+                    {
+                        this._colorMatchPattern += color.Key;
+                    }
+                    this._colorMatchPattern += "]";
+                }
+                return this._colorMatchPattern;
+            }
+        }
 
         public override bool AllowStaticRegistration()
         {
@@ -28,10 +50,13 @@ namespace XRL.World.Parts
         {
             base.SaveData(Writer);
             Writer.Write(this.DefaultAbilityDescriptions == null ? 0 : this.DefaultAbilityDescriptions.Count);
-            foreach (KeyValuePair<Guid, string> kv in this.DefaultAbilityDescriptions)
+            if (this.DefaultAbilityDescriptions != null)
             {
-                Writer.Write(kv.Key);
-                Writer.Write(kv.Value);
+                foreach (KeyValuePair<Guid, string> kv in this.DefaultAbilityDescriptions)
+                {
+                    Writer.Write(kv.Key);
+                    Writer.Write(kv.Value);
+                }
             }
         }
 
@@ -57,6 +82,7 @@ namespace XRL.World.Parts
         public override void Register(GameObject Object)
         {
             Object.RegisterPartEvent(this, "PlayerBeginConversation");
+            Object.RegisterPartEvent(this, "ObjectEnteringCellBlockedBySolid");
             base.Register(Object);
         }
 
@@ -67,8 +93,24 @@ namespace XRL.World.Parts
                 Egcb_PlayerUIHelper.PlayerBody = XRLCore.Core.Game.Player.Body;
                 GameObject speaker = E.GetGameObjectParameter("Speaker");
                 Egcb_PlayerUIHelper.ConversationPartner = speaker;
+                if (Egcb_PlayerUIHelper.CurrentInteractionZoneID != speaker.CurrentCell.ParentZone.ZoneID)
+                {
+                    Egcb_PlayerUIHelper.ZoneTradersTradedWith.Clear();
+                    Egcb_PlayerUIHelper.CurrentInteractionZoneID = speaker.CurrentCell.ParentZone.ZoneID;
+                }
                 string questID = speaker.GetStringProperty("GivesDynamicQuest", string.Empty);
                 Conversation convo = E.GetParameter<Conversation>("Conversation");
+                if (speaker.HasPart("GenericInventoryRestocker") || speaker.HasPart("Restocker"))
+                {
+                    try
+                    {
+                        Egcb_PlayerUIHelper.AddChoiceToRestockers(convo, speaker);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.Log("QudUX Mod: Encountered exception while adding conversation choice to merchant to ask about restock duration.\nException details: \n" + ex.ToString());
+                    }
+                }
                 if (questID == string.Empty || XRLCore.Core.Game.FinishedQuests.ContainsKey(questID)) //speaker has no dynamic quests
                 {
                     try
@@ -92,7 +134,263 @@ namespace XRL.World.Parts
                     }
                 }
             }
+            else if (E.ID == "ObjectEnteringCellBlockedBySolid")
+            {
+                GameObject barrier = E.GetGameObjectParameter("Object");
+                if (barrier.CurrentCell.ParentZone.ZoneID != this.ParentObject.CurrentCell.ParentZone.ZoneID) //ran into a wall or object in another zone while trying to leave the zone
+                {
+                    Cell centerCell = this.ParentObject.CurrentCell.ParentZone.GetCell(40, 12);
+                    string direction = this.ParentObject.CurrentCell.GetDirectionFromCell(centerCell);
+                    Cell effectOriginCell = this.ParentObject.CurrentCell.GetCellFromDirection(direction, true) ?? this.ParentObject.CurrentCell;
+                    int effectX = effectOriginCell.X;
+                    int effectY = effectOriginCell.Y;
+                    int rand = Stat.Random(1, 3);
+                    string text;
+                    if (rand == 1)
+                    {
+                        text = "&wOUCH!";
+                    }
+                    else if (rand == 2)
+                    {
+                        text = barrier.IsWall() ? "&wWall!" : "&wBlocked!";
+                    }
+                    else
+                    {
+                        text = "&wBlocked!";
+                    }
+                    //when moving eastward into a new cell, most of the phrase is cut off the edge of the screen, so we need to shift it left to accomodate the string size
+                    int phraseLength = ConsoleLib.Console.ColorUtility.StripFormatting(text).Length;
+                    if ((80 - effectX) < phraseLength)
+                    {
+                        effectX = Math.Max(10, 80 - phraseLength);
+                    }
+                    float num = (float)this.GetDegreesForVisualEffect(direction) / 58f;
+                    float xDel = (float)Math.Sin((double)num) / 4f;
+                    float yDel = (float)Math.Cos((double)num) / 4f;
+                    XRLCore.ParticleManager.Add(text, (float)effectX, (float)effectY, xDel, yDel, 22, 0f, 0f);
+                }
+            }
             return base.FireEvent(E);
+        }
+
+        public static void SetTraderInteraction()
+        {
+            Egcb_PlayerUIHelper.ZoneTradersTradedWith.Add(Egcb_PlayerUIHelper.ConversationPartner);
+            Egcb_PlayerUIHelper.AddChoiceToRestockers();
+        }
+
+        public override bool BeforeRender(Event E)
+        {
+            //This function updates MessageQueue messages so that colors appear appropriately in the Sidebar message log (and the fullscreen message log)
+            //It works by applying color to every word so that linebreaks don't reset words to the default color.
+            if (XRLCore.Core.Game.Player.Messages.Cache_0_12Valid)
+            {
+                //do nothing if cache is valid
+            }
+            else
+            {
+                try
+                {
+                    //update the most recent 12 lines in the MessageQueue to ensure that color gets applied to every word.
+                    List<string> messages = XRLCore.Core.Game.Player.Messages.Messages;
+                    for (int i = Math.Max(messages.Count - 12, 0); i < messages.Count; i++)
+                    {
+                        string message = messages[i];
+                        if (!message.Contains("&"))
+                        {
+                            continue;
+                        }
+                        string newMessage = string.Empty;
+                        string colorString = string.Empty;
+                        //iterate through words split by spaces. Technically this doesn't account properly for linebreak '\n' characters in a
+                        //message, but those are rare and every example I've seen uses the default &y at the beginning of the new line anyway
+                        foreach (string word in message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            if (!string.IsNullOrEmpty(newMessage))
+                            {
+                                newMessage += " ";
+                            }
+                            string newWord = word;
+                            if (!newWord.Contains("&"))
+                            {
+                                newWord = colorString + newWord;
+                            }
+                            else
+                            {
+                                if (newWord.IndexOf("&") != 0)
+                                {
+                                    newWord = colorString + newWord;
+                                }
+                                Match colorMatch = Regex.Match(word, this.ColorMatchPattern, RegexOptions.RightToLeft);
+                                if (colorMatch.Success)
+                                {
+                                    colorString = colorMatch.Value;
+                                }
+                            }
+                            newMessage += newWord;
+                        }
+                        messages[i] = newMessage;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.Log("QudUX Mod: Error trying to update color formatting in message log. (Exception: " + ex.ToString() + ")");
+                }
+            }
+            return base.BeforeRender(E);
+        }
+
+        public static bool AddChoiceToRestockers(Conversation convo = null, GameObject speaker = null)
+        {
+            if (speaker == null)
+            {
+                if (Egcb_PlayerUIHelper.ConversationPartner == null)
+                {
+                    return false;
+                }
+                speaker = Egcb_PlayerUIHelper.ConversationPartner;
+                convo = speaker.GetPart<ConversationScript>().customConversation;
+                if (convo == null)
+                {
+                    return false;
+                }
+            }
+
+            //you must view a trader's goods before the new conversation options become available.
+            if (!Egcb_PlayerUIHelper.ZoneTradersTradedWith.Contains(speaker))
+            {
+                return false;
+            }
+
+            //clean up old versions of the conversation if they exist
+            if (convo.NodesByID.ContainsKey("*Egcb_RestockDiscussionNode"))
+            {
+                convo.NodesByID.Remove("*Egcb_RestockDiscussionNode");
+                if (convo.NodesByID.ContainsKey("Start"))
+                {
+                    for (int i = 0; i < convo.NodesByID["Start"].Choices.Count; i++)
+                    {
+                        if (convo.NodesByID["Start"].Choices[i].ID == "*Egcb_RestockerDiscussionStartChoice")
+                        {
+                            convo.NodesByID["Start"].Choices.RemoveAt(i);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            long ticksRemaining;
+            bool bChanceBasedRestock = false;
+            if (speaker.HasPart("Restocker"))
+            {
+                Restocker r = speaker.GetPart<Restocker>();
+                ticksRemaining = r.NextRestockTick - ZoneManager.Ticker;
+            }
+            else if (speaker.HasPart("GenericInventoryRestocker"))
+            {
+                GenericInventoryRestocker r = speaker.GetPart<GenericInventoryRestocker>();
+                ticksRemaining = r.RestockFrequency - (ZoneManager.Ticker - r.LastRestockTick);
+                bChanceBasedRestock = true;
+            }
+            else
+            {
+                return false;
+            }
+
+            //build some dialog based on the time until restock and related parameters. TraderDialogGenData ensures the dialog options
+            //stay the same for a single trader during the entire time that trader is waiting for restock
+            TraderDialogGenData dialogGen = TraderDialogGenData.GetData(speaker, ticksRemaining);
+            double daysTillRestock = (double)ticksRemaining / 1200.0;
+            string restockDialog;
+            if (daysTillRestock >= 9)
+            {
+                restockDialog = (dialogGen.Random2 == 1)
+                    ? "Business is booming, friend.\n\nI'm pretty satisfied with what I've got for sale right now; maybe you should look for another "
+                        + "vendor if you need something I'm not offering. I'll think about acquiring more goods eventually, but it won't be anytime soon."
+                    : "Don't see anything that catches your eye?\n\nWell, you're in the minority. My latest shipment has been selling well and "
+                        + "it'll be a while before I think about rotating my stock.";
+            }
+            else
+            {
+                string daysTillRestockPhrase = (daysTillRestock < 0.5) ? "in a matter of hours"
+                            : (daysTillRestock < 1) ? "by this time tomorrow"
+                            : (daysTillRestock < 1.8) ? "within a day or two"
+                            : (daysTillRestock < 2.5) ? "in about two days' time"
+                            : (daysTillRestock < 3.5) ? "in about three days' time"
+                            : (daysTillRestock < 5.5) ? "in four or five days"
+                            : "in about a week, give or take";
+                string pronounObj = (dialogGen.Random3 == 1 ? "him" : (dialogGen.Random3 == 2 ? "her" : "them"));
+                string pronounSubj = (dialogGen.Random3 == 1 ? "he" : (dialogGen.Random3 == 2 ? "she" : "they"));
+                restockDialog =
+                      (dialogGen.Random4 == 1) ? "There are rumors of a well-stocked dromad caravan moving through the area.\n\nMy sources tell me the caravan "
+                                            + "should be passing through " + daysTillRestockPhrase + ". I'll likely able to pick up some new trinkets at that time."
+                                            + (bChanceBasedRestock ? "\n\nOf course, they are only rumors, and dromads tend to wander. I can't make any guarantees." : string.Empty)
+                    : (dialogGen.Random4 == 2) ? "My friend, a water baron is coming to visit this area soon. I sent " + pronounObj + " a list of my requests and should "
+                                            + "have some new stock available after " + pronounSubj + " arrive" + (pronounSubj == "they" ? "" : "s") + ".\n\n"
+                                            + "By the movements of the Beetle Moon, I predict " + pronounSubj + " should be here " + daysTillRestockPhrase + "."
+                                            + (bChanceBasedRestock ? "\n\nIn honesty, though, " + pronounSubj + (pronounSubj == "they" ? " are" : " is") + " not the most "
+                                            + "reliable friend. I can't make any guarantees." : string.Empty)
+                    : (dialogGen.Random4 == 3) ? "It just so happens my apprentice has come upon a new source of inventory, and is negotiating with the merchant in a "
+                                            + "nearby village.\n\nThose talks should wrap up soon and I expect to have some new stock " + daysTillRestockPhrase + "."
+                                            + (bChanceBasedRestock ? "\n\nOf course, negotiations run like water through the salt. I can't make any guarantees." : string.Empty)
+                    : "I'm glad you asked, friend. Arconauts have been coming in droves from a nearby ruin that was recently unearthed. "
+                                            + "They've been selling me trinkets faster than I can sort them, to be honest. After I manage to get things organized "
+                                            + "I'll have more inventory to offer.\n\nCheck back with me " + daysTillRestockPhrase + ", and I'll show you what I've got."
+                                            + (bChanceBasedRestock ? "\n\nThat is... assuming any of the junk is actually resellable. I can't make any guarantees." : string.Empty);
+            }
+
+            /* //DEBUG ONLY
+
+            string sDEBUG = string.Empty;
+            if (speaker.HasPart("GenericInventoryRestocker"))
+            {
+                sDEBUG += "\n    *GenericInventoryRestocker";
+                sDEBUG += "\n        IsPlayerLed()? = " + speaker.IsPlayerLed();
+                GenericInventoryRestocker r = speaker.GetPart<GenericInventoryRestocker>();
+                long countdown = r.RestockFrequency - (ZoneManager.Ticker - r.LastRestockTick);
+                sDEBUG += "\n        " + countdown + " ticks until restock (" + Math.Round((double)countdown / 1200.0, 2) + " days)";
+            }
+            if (speaker.HasPart("Restocker"))
+            {
+                sDEBUG += "\n    *Restocker";
+                sDEBUG += "\n        IsPlayerLed()? = " + speaker.IsPlayerLed();
+                Restocker r = speaker.GetPart<Restocker>();
+                long countdown = r.NextRestockTick - ZoneManager.Ticker;
+                sDEBUG += "\n        " + countdown + " ticks until restock (" + Math.Round((double)countdown / 1200.0, 2) + " days)";
+            }
+            if (!string.IsNullOrEmpty(sDEBUG))
+            {
+                sDEBUG = "Restocker data:" + sDEBUG;
+                Debug.Log("QudUX Mod: " + sDEBUG);
+            }
+
+            //DEBUG ONLY */
+
+            //add options to ask location of quest givers for whom the quest has already started
+            if (convo.NodesByID.ContainsKey("Start"))
+            {
+                //create node with info about trading
+                string restockNodeID = "*Egcb_RestockDiscussionNode";
+                ConversationNode restockNode = ConversationsAPI.newNode(restockDialog, restockNodeID);
+                restockNode.AddChoice("I have more to ask.", "Start", null);
+                restockNode.AddChoice("Live and drink.", "End", null);
+                convo.AddNode(restockNode);
+                ConversationNode startNode = convo.NodesByID["Start"];
+                int rand = Stat.Random(1, 3);
+                ConversationChoice askRestockChoice = new ConversationChoice
+                {
+                    ID = "*Egcb_RestockerDiscussionStartChoice",
+                    Text = (rand == 1) ? "Any new wares on the way?"
+                        : (rand == 2) ? "Do you have anything else to sell?"
+                        : "Can you let me know if you get any new stock?",
+                    GotoID = restockNodeID,
+                    ParentNode = startNode,
+                    Ordinal = 991 //set to make this appear immediately after the trade option
+                };
+                startNode.Choices.Add(askRestockChoice);
+                startNode.SortEndChoicesToEnd();
+            }
+            return true;
         }
 
         public bool AddChoiceToIdentifyQuestGivers(Conversation convo, GameObject speaker)
@@ -409,6 +707,49 @@ namespace XRL.World.Parts
                 }
             }
             return true;
+        }
+
+        private int GetDegreesForVisualEffect(string direction, int degreeVariance = 30)
+        {
+            int startDegree = direction == "S" ? 0
+                            : direction == "SW" ? 315
+                            : direction == "W" ? 270
+                            : direction == "NW" ? 225
+                            : direction == "N" ? 180
+                            : direction == "NE" ? 135
+                            : direction == "E" ? 90
+                            : direction == "SE" ? 45
+                            : (degreeVariance = 359); //random if direction didn't match
+            int boundA = (startDegree - degreeVariance);
+            int boundB = (startDegree + degreeVariance);
+            return Stat.RandomCosmetic(boundA, boundB) % 360;
+        }
+    }
+
+    public class TraderDialogGenData
+    {
+        private static readonly Dictionary<GameObject, TraderDialogGenData> _Data = new Dictionary<GameObject, TraderDialogGenData>();
+        readonly long ExpirationTick;
+        readonly public int Random2;
+        readonly public int Random3;
+        readonly public int Random4;
+
+        public TraderDialogGenData(long ticksRemaining)
+        {
+            this.ExpirationTick = ZoneManager.Ticker + ticksRemaining;
+            this.Random2 = Stat.Random(1, 2);
+            this.Random3 = Stat.Random(1, 3);
+            this.Random4 = Stat.Random(1, 4);
+        }
+
+        public static TraderDialogGenData GetData(GameObject trader, long ticksRemaining)
+        {
+            if (!_Data.ContainsKey(trader) || _Data[trader].ExpirationTick <= ZoneManager.Ticker)
+            {
+                _Data.Remove(trader);
+                _Data.Add(trader, new TraderDialogGenData(ticksRemaining));
+            }
+            return _Data[trader];
         }
     }
 }
