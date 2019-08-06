@@ -17,7 +17,6 @@ namespace XRL.World.Parts
     {
         public static GameObject PlayerBody = null;
         public static GameObject ConversationPartner = null;
-        private GameObject LookTarget = null;
         public static List<GameObject> NewQuestHolders = new List<GameObject>();
         public static List<GameObject> ActiveQuestHolders = new List<GameObject>();
         public static List<GameObject> ZoneTradersTradedWith = new List<GameObject>();
