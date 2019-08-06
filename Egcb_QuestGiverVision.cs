@@ -67,6 +67,7 @@ namespace XRL.World.Parts.Effects
         public override void Register(GameObject Object)
         {
             Object.RegisterEffectEvent(this, "EndTurn");
+            Object.RegisterEffectEvent(this, "ZoneActivated");
             Object.RegisterEffectEvent(this, "BeginConversation");
             base.Register(Object);
         }
@@ -74,6 +75,7 @@ namespace XRL.World.Parts.Effects
         public override void Unregister(GameObject Object)
         {
             Object.UnregisterEffectEvent(this, "EndTurn");
+            Object.UnregisterEffectEvent(this, "ZoneActivated");
             Object.UnregisterEffectEvent(this, "BeginConversation");
             base.Unregister(Object);
         }
@@ -137,7 +139,7 @@ namespace XRL.World.Parts.Effects
                     this.BadListener(); //remove visual effect when player starts a conversation with this NPC
                 }
             }
-            else if (E.ID == "EndTurn" && this.Object != null)
+            else if ((E.ID == "EndTurn" || E.ID == "ZoneActivated") && this.Object != null)
             {
                 this.CheckListen();
             }
