@@ -12,31 +12,30 @@ namespace Egocarib.Code
         [NonSerialized] public static Egcb_UIMonitor Instance;
         private static bool bInitialized;
         private string UIMode;
+        private int waitForUIFrames = 0;
+        private string UISubmode = string.Empty;
         private Egcb_JournalExtender JournalExtender;
         private Egcb_InventoryExtender InventoryExtender;
         private Egcb_ReviewCharExtender ReviewCharExtender;
         private Egcb_AbilityManagerExtender AbilityManagerExtender;
+        private Egcb_LookTiler LookTiler;
+        private Egcb_ConversationTiler ConversationTiler;
         private List<XRL.World.GameObject> gameObjsWithTrackingPart = new List<XRL.World.GameObject>();
         private XRL.World.GameObject latestGoWithTrackingPart = null;
+        private const float coroutineShortYield = 0.1f;
+        private const float coroutineLongYield = 0.75f;
         private readonly Dictionary<string, float> coroutineYieldTimes = new Dictionary<string, float>()
         {
-            //full list of GameViews used from main menu through character creation
-            //we use a value of 0.1 seconds during the main menus to ensure that Sprite option appears in a timely manner
-            //once the game starts, the coroutine frequency slows down to 1 second to reduce processing load
-            { "MainMenu"              , 0.1f },
-            { "NewGame"               , 0.1f },
-            { "PickGameType"          , 0.1f },
-            { "PickGenotype"          , 0.1f },
-            { "PickStatistics"        , 0.1f },
-            { "PickMutations"         , 0.1f },
-            { "PickSubtype"           , 0.1f },
-            { "PickCybernetics"       , 0.1f },
-            { "ReviewCharacter"       , 0.1f },
-            { "Embark"                , 0.1f },
-            { "WorldCreationProgress" , 0.1f },
-            { "Popup:AskString"       , 0.1f },
-            { "Popup:MessageBox"      , 0.1f }
-            //everything else that's not defined in here (i.e. the main game) is treated as 1.0f
+            //these are the GameViews used during normal gameplay (primarily just the "Game" view). We use a longer
+            //yield time for these views to reduce processing load while the player in playing. Other views (which are
+            //all menu/pop-up views) use a shorter coroutine yield to allow processing stuff quickly while menus are open
+            { "FireMissileWeapon" , coroutineLongYield },
+            { "Game"              , coroutineLongYield },
+            { "Looker"            , coroutineLongYield },
+            { "PickDirection"     , coroutineLongYield },
+            { "PickField"         , coroutineLongYield },
+            { "PickTarget"        , coroutineLongYield }
+            //everything else that's not defined in here uses coroutineShortYield
         };
 
         public bool Initialize()
@@ -60,20 +59,51 @@ namespace Egocarib.Code
             }
         }
 
+        public static void DirectEnableUIMode(string uiMode, string subMode, XRL.World.GameObject obj1)
+        {
+            Egcb_UIMonitor.Instance.UIMode = uiMode;
+            Egcb_UIMonitor.Instance.waitForUIFrames = 2; //allow a frame or two to pass until popup GameView transition occurs
+            Egcb_UIMonitor.Instance.enabled = true;
+            Egcb_UIMonitor.Instance.UISubmode = subMode;
+            if (subMode == "LookTiler")
+            {
+                Egcb_UIMonitor.Instance.LookTiler = new Egcb_LookTiler(obj1);
+            }
+            if (subMode == "ConversationTiler")
+            {
+                Egcb_UIMonitor.Instance.ConversationTiler = new Egcb_ConversationTiler(obj1);
+            }
+        }
+
         private void Update() //runs only when this.enabled = true
         {
-            if (GameManager.Instance.CurrentGameView != this.UIMode)
+            bool popUpMode = (this.UIMode == "Popup" && (GameManager.Instance.CurrentGameView.StartsWith("Popup") || GameManager.Instance.CurrentGameView == "TwiddleObject"));
+            if (!popUpMode && GameManager.Instance.CurrentGameView != this.UIMode)
             {
+                if (this.waitForUIFrames > 0)
+                {
+                    this.waitForUIFrames--;
+                    return;
+                }
                 this.enabled = false;
                 this.JournalExtender = null;
                 this.InventoryExtender = null;
                 this.ReviewCharExtender = null;
                 this.AbilityManagerExtender = null;
+                this.LookTiler = null;
+                this.ConversationTiler = null;
+                this.waitForUIFrames = 0;
+                this.UISubmode = string.Empty;
                 if (this.UIMode == "WorldCreationProgress")
                 {
                     Egcb_ReviewCharExtender.ApplyCustomTile(); //leaving world creation progress screen - apply custom tile now before player is inserted into starting village
                 }
                 return;
+            }
+
+            if (this.waitForUIFrames > 0)
+            {
+                this.waitForUIFrames = 0;
             }
 
             if (this.UIMode == "Inventory")
@@ -90,6 +120,20 @@ namespace Egocarib.Code
             else if (this.UIMode == "Journal")
             {
                 this.JournalExtender.FrameCheck();
+            }
+            else if (this.UIMode == "Popup")
+            {
+                if (this.UISubmode == "LookTiler")
+                {
+                    this.LookTiler.FrameCheck();
+                }
+            }
+            else if (this.UIMode == "Conversation")
+            {
+                if (this.UISubmode == "ConversationTiler")
+                {
+                    this.ConversationTiler.FrameCheck();
+                }
             }
             else if (this.UIMode == "ReviewCharacter")
             {
@@ -124,11 +168,25 @@ namespace Egocarib.Code
             }
         }
 
+        //private string DEBUG_LAST_GAME_VIEW = string.Empty; //DEBUG ONLY
         private IEnumerator UIMonitorLoop()
         {
             Debug.Log("QudUX Mod: UI Monitor Activated.");
             for (;;)
             {
+                while (this.enabled == true)
+                {
+                    yield return new WaitForSeconds(coroutineShortYield);
+                }
+
+                ////DEBUG ONLY
+                //if (GameManager.Instance.CurrentGameView != this.DEBUG_LAST_GAME_VIEW)
+                //{
+                //    this.DEBUG_LAST_GAME_VIEW = GameManager.Instance.CurrentGameView;
+                //    Debug.Log("QudUX Debug: CurrentGameView == " + GameManager.Instance.CurrentGameView);
+                //}
+                ////DEBUG ONLY
+
                 if (XRLCore.Core.Game?.Player?.Body != this.latestGoWithTrackingPart
                     && XRLCore.Core.Game?.Player?.Body != null
                     && !gameObjsWithTrackingPart.CleanContains(XRLCore.Core.Game.Player.Body)
@@ -181,13 +239,16 @@ namespace Egocarib.Code
                         //this is all we need to do for this one - a single update on menu open. No active monitoring/changes in the menu itself.
                     }
                     this.enabled = true;
-                    do { yield return new WaitForSeconds(0.1f); } while (this.enabled == true);
+                    do { yield return new WaitForSeconds(coroutineShortYield); } while (this.enabled == true);
                 }
-                if (!this.coroutineYieldTimes.ContainsKey(GameManager.Instance.CurrentGameView))
+                else
                 {
-                    this.coroutineYieldTimes.Add(GameManager.Instance.CurrentGameView, 0.75f);
+                    if (!this.coroutineYieldTimes.ContainsKey(GameManager.Instance.CurrentGameView))
+                    {
+                        this.coroutineYieldTimes.Add(GameManager.Instance.CurrentGameView, coroutineShortYield);
+                    }
+                    yield return new WaitForSeconds(this.coroutineYieldTimes[GameManager.Instance.CurrentGameView]);
                 }
-                yield return new WaitForSeconds(this.coroutineYieldTimes[GameManager.Instance.CurrentGameView]);
             }
         }
     }

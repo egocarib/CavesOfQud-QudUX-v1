@@ -5,6 +5,7 @@ using XRL.Core;
 using XRL.World.Parts;
 using ConsoleLib.Console;
 using GameObject = XRL.World.GameObject;
+using Coords = Egocarib.Console.Coords;
 
 namespace Egocarib.Code
 {
@@ -16,22 +17,6 @@ namespace Egocarib.Code
         private string DisplayMode = "Default";
         private List<GameObject> InventoryList = new List<GameObject>();
         private NalathniAppraiseConnector NalathniAppraiser = new NalathniAppraiseConnector();
-
-        public class Coords
-        {
-            private readonly int x;
-            public int X { get { return x; } }
-
-            private readonly int y;
-            public int Y { get { return y; } }
-
-            public Coords(int x, int y)
-            {
-                this.x = x;
-                this.y = y;
-            }
-        }
-
 
         public void FrameCheck() //called each frame
         {
@@ -101,6 +86,7 @@ namespace Egocarib.Code
 
         public void ReactToAltKeyRequest()  //74th tile
         {
+            //UnityEngine.Debug.Log("QudUX Debug: Alt key pressed in inventory:\n    DisplayMode == " + this.DisplayMode + "\n    PreventAppraisal == " + this.NalathniAppraiser.PreventPlayerAppraisal);
             if (this.DisplayMode == "Default")
             {
                 if (this.NalathniAppraiser.PreventPlayerAppraisal)

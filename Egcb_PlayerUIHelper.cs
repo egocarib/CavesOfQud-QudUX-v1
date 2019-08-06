@@ -17,6 +17,7 @@ namespace XRL.World.Parts
     {
         public static GameObject PlayerBody = null;
         public static GameObject ConversationPartner = null;
+        private GameObject LookTarget = null;
         public static List<GameObject> NewQuestHolders = new List<GameObject>();
         public static List<GameObject> ActiveQuestHolders = new List<GameObject>();
         public static List<GameObject> ZoneTradersTradedWith = new List<GameObject>();
@@ -83,11 +84,22 @@ namespace XRL.World.Parts
         {
             Object.RegisterPartEvent(this, "PlayerBeginConversation");
             Object.RegisterPartEvent(this, "ObjectEnteringCellBlockedBySolid");
+            Object.RegisterPartEvent(this, "OwnerGetInventoryActions");
             base.Register(Object);
         }
 
         public override bool FireEvent(Event E)
         {
+
+            if (E.ID == "OwnerGetInventoryActions")
+            {
+                //EventParameterGetInventoryActions actionList = E.GetParameter("Actions") as EventParameterGetInventoryActions;
+                GameObject targetObject = E.GetGameObjectParameter("Object");
+                //Debug.Log("QudUX Debug: OwnerGetInventoryActions\n    object = " + targetObject.DisplayName);
+                //Debug.Log("QudUX Debug: Attempting to enable Popup UIMode...");
+                Egocarib.Code.Egcb_UIMonitor.DirectEnableUIMode("Popup", "LookTiler", targetObject); //enable popup mode to draw tiles while this item's popup menus (interact / description) are open
+            }
+
             if (E.ID == "PlayerBeginConversation")
             {
                 Egcb_PlayerUIHelper.PlayerBody = XRLCore.Core.Game.Player.Body;
@@ -133,6 +145,7 @@ namespace XRL.World.Parts
                         Debug.Log("QudUX Mod: Encountered exception while translating quest/conversation references to 'some forgotten ruins'.\nException details: \n" + ex.ToString());
                     }
                 }
+                Egocarib.Code.Egcb_UIMonitor.DirectEnableUIMode("Conversation", "ConversationTiler", speaker); //enable conversation mode to draw tiles while the conversationUI is open
             }
             else if (E.ID == "ObjectEnteringCellBlockedBySolid")
             {
@@ -304,39 +317,61 @@ namespace XRL.World.Parts
             string restockDialog;
             if (daysTillRestock >= 9)
             {
-                restockDialog = (dialogGen.Random2 == 1)
-                    ? "Business is booming, friend.\n\nI'm pretty satisfied with what I've got for sale right now; maybe you should look for another "
-                        + "vendor if you need something I'm not offering. I'll think about acquiring more goods eventually, but it won't be anytime soon."
-                    : "Don't see anything that catches your eye?\n\nWell, you're in the minority. My latest shipment has been selling well and "
-                        + "it'll be a while before I think about rotating my stock.";
+                if (speaker.Blueprint == "Sparafucile")
+                {
+                    restockDialog = "\n&w*Sparafucile pokes at a few of =pronouns.possessive= wares and then gazes up at you, squinting, as if to question the basis of your inquiry.*&y\n ";
+                }
+                else
+                {
+                    restockDialog = (dialogGen.Random2 == 1)
+                        ? "Business is booming, friend.\n\nI'm pretty satisfied with what I've got for sale right now; maybe you should look for another "
+                            + "vendor if you need something I'm not offering. I'll think about acquiring more goods eventually, but it won't be anytime soon."
+                        : "Don't see anything that catches your eye?\n\nWell, you're in the minority. My latest shipment has been selling well and "
+                            + "it'll be a while before I think about rotating my stock.";
+                }
             }
             else
             {
-                string daysTillRestockPhrase = (daysTillRestock < 0.5) ? "in a matter of hours"
-                            : (daysTillRestock < 1) ? "by this time tomorrow"
-                            : (daysTillRestock < 1.8) ? "within a day or two"
-                            : (daysTillRestock < 2.5) ? "in about two days' time"
-                            : (daysTillRestock < 3.5) ? "in about three days' time"
-                            : (daysTillRestock < 5.5) ? "in four or five days"
-                            : "in about a week, give or take";
-                string pronounObj = (dialogGen.Random3 == 1 ? "him" : (dialogGen.Random3 == 2 ? "her" : "them"));
-                string pronounSubj = (dialogGen.Random3 == 1 ? "he" : (dialogGen.Random3 == 2 ? "she" : "they"));
-                restockDialog =
-                      (dialogGen.Random4 == 1) ? "There are rumors of a well-stocked dromad caravan moving through the area.\n\nMy sources tell me the caravan "
-                                            + "should be passing through " + daysTillRestockPhrase + ". I'll likely able to pick up some new trinkets at that time."
-                                            + (bChanceBasedRestock ? "\n\nOf course, they are only rumors, and dromads tend to wander. I can't make any guarantees." : string.Empty)
-                    : (dialogGen.Random4 == 2) ? "My friend, a water baron is coming to visit this area soon. I sent " + pronounObj + " a list of my requests and should "
-                                            + "have some new stock available after " + pronounSubj + " arrive" + (pronounSubj == "they" ? "" : "s") + ".\n\n"
-                                            + "By the movements of the Beetle Moon, I predict " + pronounSubj + " should be here " + daysTillRestockPhrase + "."
-                                            + (bChanceBasedRestock ? "\n\nIn honesty, though, " + pronounSubj + (pronounSubj == "they" ? " are" : " is") + " not the most "
-                                            + "reliable friend. I can't make any guarantees." : string.Empty)
-                    : (dialogGen.Random4 == 3) ? "It just so happens my apprentice has come upon a new source of inventory, and is negotiating with the merchant in a "
-                                            + "nearby village.\n\nThose talks should wrap up soon and I expect to have some new stock " + daysTillRestockPhrase + "."
-                                            + (bChanceBasedRestock ? "\n\nOf course, negotiations run like water through the salt. I can't make any guarantees." : string.Empty)
-                    : "I'm glad you asked, friend. Arconauts have been coming in droves from a nearby ruin that was recently unearthed. "
-                                            + "They've been selling me trinkets faster than I can sort them, to be honest. After I manage to get things organized "
-                                            + "I'll have more inventory to offer.\n\nCheck back with me " + daysTillRestockPhrase + ", and I'll show you what I've got."
-                                            + (bChanceBasedRestock ? "\n\nThat is... assuming any of the junk is actually resellable. I can't make any guarantees." : string.Empty);
+                if (speaker.Blueprint == "Sparafucile")
+                {
+                    if (daysTillRestock < 0.5)
+                    {
+                        restockDialog = "\n&w*Sparafucile nods eagerly, as if to convey that =pronouns.subjective= is expecting something very soon.*&y\n ";
+                    }
+                    else
+                    {
+                        restockDialog = "\n&w*Smiling, Sparafucile gives a slight nod.*&y\n\n"
+                            + "&w*=pronouns.Subjective= purses =pronouns.possessive= lips thoughtfully for a moment, then raises " + Math.Max(1, (int)daysTillRestock) + " thin fingers.*&y\n ";
+                    }
+                }
+                else
+                {
+                    string daysTillRestockPhrase = (daysTillRestock < 0.5) ? "in a matter of hours"
+                                : (daysTillRestock < 1) ? "by this time tomorrow"
+                                : (daysTillRestock < 1.8) ? "within a day or two"
+                                : (daysTillRestock < 2.5) ? "in about two days' time"
+                                : (daysTillRestock < 3.5) ? "in about three days' time"
+                                : (daysTillRestock < 5.5) ? "in four or five days"
+                                : "in about a week, give or take";
+                    string pronounObj = (dialogGen.Random3 == 1 ? "him" : (dialogGen.Random3 == 2 ? "her" : "them"));
+                    string pronounSubj = (dialogGen.Random3 == 1 ? "he" : (dialogGen.Random3 == 2 ? "she" : "they"));
+                    restockDialog =
+                          (dialogGen.Random4 == 1) ? "There are rumors of a well-stocked dromad caravan moving through the area.\n\nMy sources tell me the caravan "
+                                                + "should be passing through " + daysTillRestockPhrase + ". I'll likely able to pick up some new trinkets at that time."
+                                                + (bChanceBasedRestock ? "\n\nOf course, they are only rumors, and dromads tend to wander. I can't make any guarantees." : string.Empty)
+                        : (dialogGen.Random4 == 2) ? "My friend, a water baron is coming to visit this area soon. I sent " + pronounObj + " a list of my requests and should "
+                                                + "have some new stock available after " + pronounSubj + " arrive" + (pronounSubj == "they" ? "" : "s") + ".\n\n"
+                                                + "By the movements of the Beetle Moon, I predict " + pronounSubj + " should be here " + daysTillRestockPhrase + "."
+                                                + (bChanceBasedRestock ? "\n\nIn honesty, though, " + pronounSubj + (pronounSubj == "they" ? " are" : " is") + " not the most "
+                                                + "reliable friend. I can't make any guarantees." : string.Empty)
+                        : (dialogGen.Random4 == 3) ? "It just so happens my apprentice has come upon a new source of inventory, and is negotiating with the merchant in a "
+                                                + "nearby village.\n\nThose talks should wrap up soon and I expect to have some new stock " + daysTillRestockPhrase + "."
+                                                + (bChanceBasedRestock ? "\n\nOf course, negotiations run like water through the salt. I can't make any guarantees." : string.Empty)
+                        : "I'm glad you asked, friend. Arconauts have been coming in droves from a nearby ruin that was recently unearthed. "
+                                                + "They've been selling me trinkets faster than I can sort them, to be honest. After I manage to get things organized "
+                                                + "I'll have more inventory to offer.\n\nCheck back with me " + daysTillRestockPhrase + ", and I'll show you what I've got."
+                                                + (bChanceBasedRestock ? "\n\nThat is... assuming any of the junk is actually resellable. I can't make any guarantees." : string.Empty);
+                }
             }
 
             /* //DEBUG ONLY
