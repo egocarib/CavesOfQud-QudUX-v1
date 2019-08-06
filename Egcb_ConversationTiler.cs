@@ -25,7 +25,7 @@ namespace Egocarib.Code
                 && this.ConversationTargetName.Length <= 74; //no room to render tile if name is greater than 74 characters (it'll overflow off the side of the screen)
         }
 
-        public Egcb_ConversationTiler()
+        public Egcb_ConversationTiler() //default constructor, not intended to be used.
         {
             this.bConversationTargetValid = false;
         }
@@ -72,11 +72,11 @@ namespace Egocarib.Code
             scrapBuffer[x++, 0].Char = ' ';
             this.ConversationTargetInfo.WriteTileToBuffer(scrapBuffer, x, 0);
             this.LastTileCoords = new Coords(x, 0);
-            if (x++ < 80)
+            if (x++ < 79)
             {
                 scrapBuffer[x, 0].Char = ' ';
             }
-            if (x++ < 80)
+            if (x++ < 79)
             {
                 scrapBuffer[x, 0].Char = ']';
             }

@@ -86,6 +86,7 @@ namespace Egocarib.Console
         }
 
         //returns true if the tile is already applied at the specified screen coordinates
+        //(can be used for efficiency to avoid unnecessary work if you're drawing every frame)
         public bool IsTileOnScreen(int x, int y)
         {
             if (x < 0 || x >= TextConsole.CurrentBuffer.Width || y < 0 || y >= TextConsole.CurrentBuffer.Height)
@@ -122,7 +123,6 @@ namespace Egocarib.Console
 
             //gather render data for GameObject similar to how the game does it in Cell.cs
             Render pRender = go?.pRender;
-            //if (pRender == null || pRender.Tile == null || !pRender.Visible || Globals.RenderMode != RenderModeType.Tiles)
             if (pRender == null || !pRender.Visible || Globals.RenderMode != RenderModeType.Tiles)
             {
                 return;
@@ -175,6 +175,7 @@ namespace Egocarib.Console
                 this.DetailColor = ConsoleLib.Console.ColorUtility.ColorMap[pRender.DetailColor[0]];
                 this.DetailColorChar = pRender.DetailColor[0];
             }
+            //from what I've been able to determine, I believe that the BackgroundString only applies to non-tiles (RenderString) entities (such as gas clouds)
             string colorString = renderData.ColorString + (string.IsNullOrEmpty(this.Tile) ? this.BackgroundString : string.Empty);
             if (!string.IsNullOrEmpty(colorString))
             {
