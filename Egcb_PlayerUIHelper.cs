@@ -92,59 +92,73 @@ namespace XRL.World.Parts
 
             if (E.ID == "OwnerGetInventoryActions")
             {
-                //EventParameterGetInventoryActions actionList = E.GetParameter("Actions") as EventParameterGetInventoryActions;
                 GameObject targetObject = E.GetGameObjectParameter("Object");
-                //Debug.Log("QudUX Debug: OwnerGetInventoryActions\n    object = " + targetObject.DisplayName);
-                //Debug.Log("QudUX Debug: Attempting to enable Popup UIMode...");
-                Egocarib.Code.Egcb_UIMonitor.DirectEnableUIMode("Popup", "LookTiler", targetObject); //enable popup mode to draw tiles while this item's popup menus (interact / description) are open
+                try
+                {
+                    Egocarib.Code.Egcb_UIMonitor.DirectEnableUIMode("Popup", "LookTiler", targetObject); //enable popup mode to draw tiles while this item's popup menus (interact / description) are open
+                }
+                catch (Exception ex)
+                {
+                    Debug.Log("QudUX Mod: Encountered an exception trying to DirectEnable Popup UI mode for object " + (targetObject == null ? "<NULL>" : targetObject.DisplayNameOnlyDirect) + "\n\nException:\n" + ex);
+                }
             }
 
             if (E.ID == "PlayerBeginConversation")
             {
                 Egcb_PlayerUIHelper.PlayerBody = XRLCore.Core.Game.Player.Body;
                 GameObject speaker = E.GetGameObjectParameter("Speaker");
-                Egcb_PlayerUIHelper.ConversationPartner = speaker;
-                if (Egcb_PlayerUIHelper.CurrentInteractionZoneID != speaker.CurrentCell.ParentZone.ZoneID)
+                if (speaker != null)
                 {
-                    Egcb_PlayerUIHelper.ZoneTradersTradedWith.Clear();
-                    Egcb_PlayerUIHelper.CurrentInteractionZoneID = speaker.CurrentCell.ParentZone.ZoneID;
-                }
-                string questID = speaker.GetStringProperty("GivesDynamicQuest", string.Empty);
-                Conversation convo = E.GetParameter<Conversation>("Conversation");
-                if (speaker.HasPart("GenericInventoryRestocker") || speaker.HasPart("Restocker"))
-                {
+                    Egcb_PlayerUIHelper.ConversationPartner = speaker;
+                    if (Egcb_PlayerUIHelper.CurrentInteractionZoneID != speaker.CurrentCell.ParentZone.ZoneID)
+                    {
+                        Egcb_PlayerUIHelper.ZoneTradersTradedWith.Clear();
+                        Egcb_PlayerUIHelper.CurrentInteractionZoneID = speaker.CurrentCell.ParentZone.ZoneID;
+                    }
+                    string questID = speaker.GetStringProperty("GivesDynamicQuest", string.Empty);
+                    Conversation convo = E.GetParameter<Conversation>("Conversation");
+                    if (speaker.HasPart("GenericInventoryRestocker") || speaker.HasPart("Restocker"))
+                    {
+                        try
+                        {
+                            Egcb_PlayerUIHelper.AddChoiceToRestockers(convo, speaker);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.Log("QudUX Mod: Encountered exception while adding conversation choice to merchant to ask about restock duration.\nException details: \n" + ex.ToString());
+                        }
+                    }
+                    if (questID == string.Empty || XRLCore.Core.Game.FinishedQuests.ContainsKey(questID)) //speaker has no dynamic quests
+                    {
+                        try
+                        {
+                            this.AddChoiceToIdentifyQuestGivers(convo, speaker);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.Log("QudUX Mod: Encountered exception while adding conversation choices to identify village quest givers.\nException details: \n" + ex.ToString());
+                        }
+                    }
+                    else //speaker does have dynamic quest
+                    {
+                        try
+                        {
+                            this.UpdateForgottenRuinQuestAndConversationText(convo, questID);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.Log("QudUX Mod: Encountered exception while translating quest/conversation references to 'some forgotten ruins'.\nException details: \n" + ex.ToString());
+                        }
+                    }
                     try
                     {
-                        Egcb_PlayerUIHelper.AddChoiceToRestockers(convo, speaker);
+                        Egocarib.Code.Egcb_UIMonitor.DirectEnableUIMode("Conversation", "ConversationTiler", speaker); //enable conversation mode to draw tiles while the conversationUI is open
                     }
                     catch (Exception ex)
                     {
-                        Debug.Log("QudUX Mod: Encountered exception while adding conversation choice to merchant to ask about restock duration.\nException details: \n" + ex.ToString());
+                        Debug.Log("QudUX Mod: Encountered an exception trying to DirectEnable Conversation UI mode for speaker " + (speaker == null ? "<NULL>" : speaker.DisplayNameOnlyDirect) + "\n\nException:\n" + ex);
                     }
                 }
-                if (questID == string.Empty || XRLCore.Core.Game.FinishedQuests.ContainsKey(questID)) //speaker has no dynamic quests
-                {
-                    try
-                    {
-                        this.AddChoiceToIdentifyQuestGivers(convo, speaker);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.Log("QudUX Mod: Encountered exception while adding conversation choices to identify village quest givers.\nException details: \n" + ex.ToString());
-                    }
-                }
-                else //speaker does have dynamic quest
-                {
-                    try
-                    {
-                        this.UpdateForgottenRuinQuestAndConversationText(convo, questID);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.Log("QudUX Mod: Encountered exception while translating quest/conversation references to 'some forgotten ruins'.\nException details: \n" + ex.ToString());
-                    }
-                }
-                Egocarib.Code.Egcb_UIMonitor.DirectEnableUIMode("Conversation", "ConversationTiler", speaker); //enable conversation mode to draw tiles while the conversationUI is open
             }
             else if (E.ID == "ObjectEnteringCellBlockedBySolid")
             {
