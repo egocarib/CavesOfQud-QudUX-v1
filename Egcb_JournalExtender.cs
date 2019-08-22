@@ -18,6 +18,7 @@ namespace Egocarib.Code
         private readonly ConsoleChar LocationTabChar = TextConsole.CurrentBuffer[3, 2]; //reference preserved for efficiency
         private readonly ushort WChar = 22;
         private Dictionary<string, List<JournalFacts>> CachedRelevantJournalNotesByName = new Dictionary<string, List<JournalFacts>>();
+        private List<string> ErroredJournalScreenStrings = new List<string>();
 
         public Egcb_JournalExtender()
         {
@@ -61,7 +62,11 @@ namespace Egocarib.Code
 
                         if (!this.CachedRelevantJournalNotesByName.ContainsKey(locationName))
                         {
-                            Debug.Log("QudUX Mod: Error trying to parse location from journal screen. [locationName = " + locationName + "]\nKNOWN LOCATIONS:\n" + DebugGetKnownLocationsList());
+                            if (!this.ErroredJournalScreenStrings.Contains(locationName))
+                            {
+                                Debug.Log("QudUX Mod: Error trying to parse location from journal screen. [locationName = " + locationName + "]\nKNOWN LOCATIONS:\n" + DebugGetKnownLocationsList());
+                                this.ErroredJournalScreenStrings.Add(locationName);
+                            }
                             continue;
                         }
 

@@ -268,177 +268,212 @@ namespace XRL.World.Parts
 
         public static bool AddChoiceToRestockers(Conversation convo = null, GameObject speaker = null)
         {
-            if (speaker == null)
+            int _debugSegmentCounter = 0;
+            try
             {
-                if (Egcb_PlayerUIHelper.ConversationPartner == null)
+                if (speaker == null)
                 {
-                    return false;
-                }
-                speaker = Egcb_PlayerUIHelper.ConversationPartner;
-                convo = speaker.GetPart<ConversationScript>().customConversation;
-                if (convo == null)
-                {
-                    return false;
-                }
-            }
-
-            //you must view a trader's goods before the new conversation options become available.
-            if (!Egcb_PlayerUIHelper.ZoneTradersTradedWith.Contains(speaker))
-            {
-                return false;
-            }
-
-            //clean up old versions of the conversation if they exist
-            if (convo.NodesByID.ContainsKey("*Egcb_RestockDiscussionNode"))
-            {
-                convo.NodesByID.Remove("*Egcb_RestockDiscussionNode");
-                if (convo.NodesByID.ContainsKey("Start"))
-                {
-                    for (int i = 0; i < convo.NodesByID["Start"].Choices.Count; i++)
+                    if (Egcb_PlayerUIHelper.ConversationPartner == null)
                     {
-                        if (convo.NodesByID["Start"].Choices[i].ID == "*Egcb_RestockerDiscussionStartChoice")
+                        return false;
+                    }
+                    speaker = Egcb_PlayerUIHelper.ConversationPartner;
+                    convo = speaker.GetPart<ConversationScript>().customConversation;
+                    if (convo == null)
+                    {
+                        return false;
+                    }
+                }
+                _debugSegmentCounter = 1;
+
+                //you must view a trader's goods before the new conversation options become available.
+                if (!Egcb_PlayerUIHelper.ZoneTradersTradedWith.Contains(speaker))
+                {
+                    return false;
+                }
+                _debugSegmentCounter = 2;
+
+                //clean up old versions of the conversation if they exist
+                if (convo.NodesByID.ContainsKey("*Egcb_RestockDiscussionNode"))
+                {
+                    _debugSegmentCounter = 3;
+                    convo.NodesByID.Remove("*Egcb_RestockDiscussionNode");
+                    if (convo.NodesByID.ContainsKey("Start"))
+                    {
+                        _debugSegmentCounter = 4;
+                        for (int i = 0; i < convo.NodesByID["Start"].Choices.Count; i++)
                         {
-                            convo.NodesByID["Start"].Choices.RemoveAt(i);
-                            break;
+                            if (convo.NodesByID["Start"].Choices[i].ID == "*Egcb_RestockerDiscussionStartChoice")
+                            {
+                                convo.NodesByID["Start"].Choices.RemoveAt(i);
+                                break;
+                            }
                         }
                     }
                 }
-            }
+                _debugSegmentCounter = 5;
 
-            long ticksRemaining;
-            bool bChanceBasedRestock = false;
-            if (speaker.HasPart("Restocker"))
-            {
-                Restocker r = speaker.GetPart<Restocker>();
-                ticksRemaining = r.NextRestockTick - ZoneManager.Ticker;
-            }
-            else if (speaker.HasPart("GenericInventoryRestocker"))
-            {
-                GenericInventoryRestocker r = speaker.GetPart<GenericInventoryRestocker>();
-                ticksRemaining = r.RestockFrequency - (ZoneManager.Ticker - r.LastRestockTick);
-                bChanceBasedRestock = true;
-            }
-            else
-            {
-                return false;
-            }
-
-            //build some dialog based on the time until restock and related parameters. TraderDialogGenData ensures the dialog options
-            //stay the same for a single trader during the entire time that trader is waiting for restock
-            TraderDialogGenData dialogGen = TraderDialogGenData.GetData(speaker, ticksRemaining);
-            double daysTillRestock = (double)ticksRemaining / 1200.0;
-            string restockDialog;
-            if (daysTillRestock >= 9)
-            {
-                if (speaker.Blueprint == "Sparafucile")
+                long ticksRemaining;
+                bool bChanceBasedRestock = false;
+                if (speaker.HasPart("Restocker"))
                 {
-                    restockDialog = "\n&w*Sparafucile pokes at a few of =pronouns.possessive= wares and then gazes up at you, squinting, as if to question the basis of your inquiry.*&y\n ";
+                    _debugSegmentCounter = 6;
+                    Restocker r = speaker.GetPart<Restocker>();
+                    ticksRemaining = r.NextRestockTick - ZoneManager.Ticker;
+                    _debugSegmentCounter = 7;
+                }
+                else if (speaker.HasPart("GenericInventoryRestocker"))
+                {
+                    _debugSegmentCounter = 8;
+                    GenericInventoryRestocker r = speaker.GetPart<GenericInventoryRestocker>();
+                    ticksRemaining = r.RestockFrequency - (ZoneManager.Ticker - r.LastRestockTick);
+                    bChanceBasedRestock = true;
+                    _debugSegmentCounter = 9;
                 }
                 else
                 {
-                    restockDialog = (dialogGen.Random2 == 1)
-                        ? "Business is booming, friend.\n\nI'm pretty satisfied with what I've got for sale right now; maybe you should look for another "
-                            + "vendor if you need something I'm not offering. I'll think about acquiring more goods eventually, but it won't be anytime soon."
-                        : "Don't see anything that catches your eye?\n\nWell, you're in the minority. My latest shipment has been selling well and "
-                            + "it'll be a while before I think about rotating my stock.";
+                    return false;
                 }
-            }
-            else
-            {
-                if (speaker.Blueprint == "Sparafucile")
+                _debugSegmentCounter = 10;
+
+                //build some dialog based on the time until restock and related parameters. TraderDialogGenData ensures the dialog options
+                //stay the same for a single trader during the entire time that trader is waiting for restock
+                TraderDialogGenData dialogGen = TraderDialogGenData.GetData(speaker, ticksRemaining);
+                _debugSegmentCounter = 11;
+                double daysTillRestock = (double)ticksRemaining / 1200.0;
+                string restockDialog;
+                if (daysTillRestock >= 9)
                 {
-                    if (daysTillRestock < 0.5)
+                    _debugSegmentCounter = 12;
+                    if (speaker.Blueprint == "Sparafucile")
                     {
-                        restockDialog = "\n&w*Sparafucile nods eagerly, as if to convey that =pronouns.subjective= is expecting something very soon.*&y\n ";
+                        restockDialog = "\n&w*Sparafucile pokes at a few of =pronouns.possessive= wares and then gazes up at you, squinting, as if to question the basis of your inquiry.*&y\n ";
                     }
                     else
                     {
-                        restockDialog = "\n&w*Smiling, Sparafucile gives a slight nod.*&y\n\n"
-                            + "&w*=pronouns.Subjective= purses =pronouns.possessive= lips thoughtfully for a moment, then raises " + Math.Max(1, (int)daysTillRestock) + " thin fingers.*&y\n ";
+                        restockDialog = (dialogGen.Random2 == 1)
+                            ? "Business is booming, friend.\n\nI'm pretty satisfied with what I've got for sale right now; maybe you should look for another "
+                                + "vendor if you need something I'm not offering. I'll think about acquiring more goods eventually, but it won't be anytime soon."
+                            : "Don't see anything that catches your eye?\n\nWell, you're in the minority. My latest shipment has been selling well and "
+                                + "it'll be a while before I think about rotating my stock.";
                     }
                 }
                 else
                 {
-                    string daysTillRestockPhrase = (daysTillRestock < 0.5) ? "in a matter of hours"
-                                : (daysTillRestock < 1) ? "by this time tomorrow"
-                                : (daysTillRestock < 1.8) ? "within a day or two"
-                                : (daysTillRestock < 2.5) ? "in about two days' time"
-                                : (daysTillRestock < 3.5) ? "in about three days' time"
-                                : (daysTillRestock < 5.5) ? "in four or five days"
-                                : "in about a week, give or take";
-                    string pronounObj = (dialogGen.Random3 == 1 ? "him" : (dialogGen.Random3 == 2 ? "her" : "them"));
-                    string pronounSubj = (dialogGen.Random3 == 1 ? "he" : (dialogGen.Random3 == 2 ? "she" : "they"));
-                    restockDialog =
-                          (dialogGen.Random4 == 1) ? "There are rumors of a well-stocked dromad caravan moving through the area.\n\nMy sources tell me the caravan "
-                                                + "should be passing through " + daysTillRestockPhrase + ". I'll likely able to pick up some new trinkets at that time."
-                                                + (bChanceBasedRestock ? "\n\nOf course, they are only rumors, and dromads tend to wander. I can't make any guarantees." : string.Empty)
-                        : (dialogGen.Random4 == 2) ? "My friend, a water baron is coming to visit this area soon. I sent " + pronounObj + " a list of my requests and should "
-                                                + "have some new stock available after " + pronounSubj + " arrive" + (pronounSubj == "they" ? "" : "s") + ".\n\n"
-                                                + "By the movements of the Beetle Moon, I predict " + pronounSubj + " should be here " + daysTillRestockPhrase + "."
-                                                + (bChanceBasedRestock ? "\n\nIn honesty, though, " + pronounSubj + (pronounSubj == "they" ? " are" : " is") + " not the most "
-                                                + "reliable friend. I can't make any guarantees." : string.Empty)
-                        : (dialogGen.Random4 == 3) ? "It just so happens my apprentice has come upon a new source of inventory, and is negotiating with the merchant in a "
-                                                + "nearby village.\n\nThose talks should wrap up soon and I expect to have some new stock " + daysTillRestockPhrase + "."
-                                                + (bChanceBasedRestock ? "\n\nOf course, negotiations run like water through the salt. I can't make any guarantees." : string.Empty)
-                        : "I'm glad you asked, friend. Arconauts have been coming in droves from a nearby ruin that was recently unearthed. "
-                                                + "They've been selling me trinkets faster than I can sort them, to be honest. After I manage to get things organized "
-                                                + "I'll have more inventory to offer.\n\nCheck back with me " + daysTillRestockPhrase + ", and I'll show you what I've got."
-                                                + (bChanceBasedRestock ? "\n\nThat is... assuming any of the junk is actually resellable. I can't make any guarantees." : string.Empty);
+                    _debugSegmentCounter = 13;
+                    if (speaker.Blueprint == "Sparafucile")
+                    {
+                        _debugSegmentCounter = 14;
+                        if (daysTillRestock < 0.5)
+                        {
+                            _debugSegmentCounter = 15;
+                            restockDialog = "\n&w*Sparafucile nods eagerly, as if to convey that =pronouns.subjective= is expecting something very soon.*&y\n ";
+                        }
+                        else
+                        {
+                            restockDialog = "\n&w*Smiling, Sparafucile gives a slight nod.*&y\n\n"
+                                + "&w*=pronouns.Subjective= purses =pronouns.possessive= lips thoughtfully for a moment, then raises " + Math.Max(1, (int)daysTillRestock) + " thin fingers.*&y\n ";
+                        }
+                    }
+                    else
+                    {
+                        _debugSegmentCounter = 16;
+                        string daysTillRestockPhrase = (daysTillRestock < 0.5) ? "in a matter of hours"
+                                    : (daysTillRestock < 1) ? "by this time tomorrow"
+                                    : (daysTillRestock < 1.8) ? "within a day or two"
+                                    : (daysTillRestock < 2.5) ? "in about two days' time"
+                                    : (daysTillRestock < 3.5) ? "in about three days' time"
+                                    : (daysTillRestock < 5.5) ? "in four or five days"
+                                    : "in about a week, give or take";
+                        string pronounObj = (dialogGen.Random3 == 1 ? "him" : (dialogGen.Random3 == 2 ? "her" : "them"));
+                        string pronounSubj = (dialogGen.Random3 == 1 ? "he" : (dialogGen.Random3 == 2 ? "she" : "they"));
+                        restockDialog =
+                              (dialogGen.Random4 == 1) ? "There are rumors of a well-stocked dromad caravan moving through the area.\n\nMy sources tell me the caravan "
+                                                    + "should be passing through " + daysTillRestockPhrase + ". I'll likely able to pick up some new trinkets at that time."
+                                                    + (bChanceBasedRestock ? "\n\nOf course, they are only rumors, and dromads tend to wander. I can't make any guarantees." : string.Empty)
+                            : (dialogGen.Random4 == 2) ? "My friend, a water baron is coming to visit this area soon. I sent " + pronounObj + " a list of my requests and should "
+                                                    + "have some new stock available after " + pronounSubj + " arrive" + (pronounSubj == "they" ? "" : "s") + ".\n\n"
+                                                    + "By the movements of the Beetle Moon, I predict " + pronounSubj + " should be here " + daysTillRestockPhrase + "."
+                                                    + (bChanceBasedRestock ? "\n\nIn honesty, though, " + pronounSubj + (pronounSubj == "they" ? " are" : " is") + " not the most "
+                                                    + "reliable friend. I can't make any guarantees." : string.Empty)
+                            : (dialogGen.Random4 == 3) ? "It just so happens my apprentice has come upon a new source of inventory, and is negotiating with the merchant in a "
+                                                    + "nearby village.\n\nThose talks should wrap up soon and I expect to have some new stock " + daysTillRestockPhrase + "."
+                                                    + (bChanceBasedRestock ? "\n\nOf course, negotiations run like water through the salt. I can't make any guarantees." : string.Empty)
+                            : "I'm glad you asked, friend. Arconauts have been coming in droves from a nearby ruin that was recently unearthed. "
+                                                    + "They've been selling me trinkets faster than I can sort them, to be honest. After I manage to get things organized "
+                                                    + "I'll have more inventory to offer.\n\nCheck back with me " + daysTillRestockPhrase + ", and I'll show you what I've got."
+                                                    + (bChanceBasedRestock ? "\n\nThat is... assuming any of the junk is actually resellable. I can't make any guarantees." : string.Empty);
+                    }
+                    _debugSegmentCounter = 17;
                 }
-            }
 
-            /* //DEBUG ONLY
+                /* //DEBUG ONLY
 
-            string sDEBUG = string.Empty;
-            if (speaker.HasPart("GenericInventoryRestocker"))
-            {
-                sDEBUG += "\n    *GenericInventoryRestocker";
-                sDEBUG += "\n        IsPlayerLed()? = " + speaker.IsPlayerLed();
-                GenericInventoryRestocker r = speaker.GetPart<GenericInventoryRestocker>();
-                long countdown = r.RestockFrequency - (ZoneManager.Ticker - r.LastRestockTick);
-                sDEBUG += "\n        " + countdown + " ticks until restock (" + Math.Round((double)countdown / 1200.0, 2) + " days)";
-            }
-            if (speaker.HasPart("Restocker"))
-            {
-                sDEBUG += "\n    *Restocker";
-                sDEBUG += "\n        IsPlayerLed()? = " + speaker.IsPlayerLed();
-                Restocker r = speaker.GetPart<Restocker>();
-                long countdown = r.NextRestockTick - ZoneManager.Ticker;
-                sDEBUG += "\n        " + countdown + " ticks until restock (" + Math.Round((double)countdown / 1200.0, 2) + " days)";
-            }
-            if (!string.IsNullOrEmpty(sDEBUG))
-            {
-                sDEBUG = "Restocker data:" + sDEBUG;
-                Debug.Log("QudUX Mod: " + sDEBUG);
-            }
-
-            //DEBUG ONLY */
-
-            //add options to ask location of quest givers for whom the quest has already started
-            if (convo.NodesByID.ContainsKey("Start"))
-            {
-                //create node with info about trading
-                string restockNodeID = "*Egcb_RestockDiscussionNode";
-                ConversationNode restockNode = ConversationsAPI.newNode(restockDialog, restockNodeID);
-                restockNode.AddChoice("I have more to ask.", "Start", null);
-                restockNode.AddChoice("Live and drink.", "End", null);
-                convo.AddNode(restockNode);
-                ConversationNode startNode = convo.NodesByID["Start"];
-                int rand = Stat.Random(1, 3);
-                ConversationChoice askRestockChoice = new ConversationChoice
+                string sDEBUG = string.Empty;
+                if (speaker.HasPart("GenericInventoryRestocker"))
                 {
-                    ID = "*Egcb_RestockerDiscussionStartChoice",
-                    Text = (rand == 1) ? "Any new wares on the way?"
-                        : (rand == 2) ? "Do you have anything else to sell?"
-                        : "Can you let me know if you get any new stock?",
-                    GotoID = restockNodeID,
-                    ParentNode = startNode,
-                    Ordinal = 991 //set to make this appear immediately after the trade option
-                };
-                startNode.Choices.Add(askRestockChoice);
-                startNode.SortEndChoicesToEnd();
+                    sDEBUG += "\n    *GenericInventoryRestocker";
+                    sDEBUG += "\n        IsPlayerLed()? = " + speaker.IsPlayerLed();
+                    GenericInventoryRestocker r = speaker.GetPart<GenericInventoryRestocker>();
+                    long countdown = r.RestockFrequency - (ZoneManager.Ticker - r.LastRestockTick);
+                    sDEBUG += "\n        " + countdown + " ticks until restock (" + Math.Round((double)countdown / 1200.0, 2) + " days)";
+                }
+                if (speaker.HasPart("Restocker"))
+                {
+                    sDEBUG += "\n    *Restocker";
+                    sDEBUG += "\n        IsPlayerLed()? = " + speaker.IsPlayerLed();
+                    Restocker r = speaker.GetPart<Restocker>();
+                    long countdown = r.NextRestockTick - ZoneManager.Ticker;
+                    sDEBUG += "\n        " + countdown + " ticks until restock (" + Math.Round((double)countdown / 1200.0, 2) + " days)";
+                }
+                if (!string.IsNullOrEmpty(sDEBUG))
+                {
+                    sDEBUG = "Restocker data:" + sDEBUG;
+                    Debug.Log("QudUX Mod: " + sDEBUG);
+                }
+
+                //DEBUG ONLY */
+                _debugSegmentCounter = 18;
+
+                //add options to ask location of quest givers for whom the quest has already started
+                if (convo.NodesByID.ContainsKey("Start"))
+                {
+                    _debugSegmentCounter = 19;
+                    //create node with info about trading
+                    string restockNodeID = "*Egcb_RestockDiscussionNode";
+                    ConversationNode restockNode = ConversationsAPI.newNode(restockDialog, restockNodeID);
+                    _debugSegmentCounter = 20;
+                    restockNode.AddChoice("I have more to ask.", "Start", null);
+                    restockNode.AddChoice("Live and drink.", "End", null);
+                    convo.AddNode(restockNode);
+                    _debugSegmentCounter = 21;
+                    ConversationNode startNode = convo.NodesByID["Start"];
+                    int rand = Stat.Random(1, 3);
+                    _debugSegmentCounter = 22;
+                    ConversationChoice askRestockChoice = new ConversationChoice
+                    {
+                        ID = "*Egcb_RestockerDiscussionStartChoice",
+                        Text = (rand == 1) ? "Any new wares on the way?"
+                            : (rand == 2) ? "Do you have anything else to sell?"
+                            : "Can you let me know if you get any new stock?",
+                        GotoID = restockNodeID,
+                        ParentNode = startNode,
+                        Ordinal = 991 //set to make this appear immediately after the trade option
+                    };
+                    _debugSegmentCounter = 23;
+                    startNode.Choices.Add(askRestockChoice);
+                    _debugSegmentCounter = 24;
+                    startNode.SortEndChoicesToEnd();
+                    _debugSegmentCounter = 25;
+                }
+                _debugSegmentCounter = 26;
+                return true;
             }
-            return true;
+            catch (Exception ex)
+            {
+                Debug.Log("QudUX Mod: Error encountered in AddChoiceToRestockers (debugSegment: " + _debugSegmentCounter + ", Exception: " + ex.ToString() + ")");
+                return false;
+            }
         }
 
         public bool AddChoiceToIdentifyQuestGivers(Conversation convo, GameObject speaker)

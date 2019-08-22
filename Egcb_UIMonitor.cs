@@ -186,21 +186,27 @@ namespace Egocarib.Code
                 //    Debug.Log("QudUX Debug: CurrentGameView == " + GameManager.Instance.CurrentGameView);
                 //}
                 ////DEBUG ONLY
-
-                if (XRLCore.Core.Game?.Player?.Body != this.latestGoWithTrackingPart
-                    && XRLCore.Core.Game?.Player?.Body != null
-                    && !gameObjsWithTrackingPart.CleanContains(XRLCore.Core.Game.Player.Body)
-                    && !XRLCore.Core.Game.Player.Body.IsNowhere()) //IsNowhere forces us to wait for player to be initialized (otherwise duplicate part won't be loaded from serialization yet and we erroneously add another)
+                try
                 {
-                    XRL.World.GameObject player = XRLCore.Core.Game.Player.Body;
-                    this.latestGoWithTrackingPart = player;
-                    gameObjsWithTrackingPart.Add(player);
-                    //add part to player (or dominated entity, whatever, etc)
-                    if (!player.HasPart("Egcb_PlayerUIHelper")) //may already have the part if it was serialized on the player
+                    if (XRLCore.Core.Game?.Player?.Body != this.latestGoWithTrackingPart
+                        && XRLCore.Core.Game?.Player?.Body != null
+                        && !gameObjsWithTrackingPart.CleanContains(XRLCore.Core.Game.Player.Body)
+                        && !XRLCore.Core.Game.Player.Body.IsNowhere()) //IsNowhere forces us to wait for player to be initialized (otherwise duplicate part won't be loaded from serialization yet and we erroneously add another)
                     {
-                        player.AddPart<Egcb_PlayerUIHelper>(true);
+                        XRL.World.GameObject player = XRLCore.Core.Game.Player.Body;
+                        this.latestGoWithTrackingPart = player;
+                        gameObjsWithTrackingPart.Add(player);
+                        //add part to player (or dominated entity, whatever, etc)
+                        if (!player.HasPart("Egcb_PlayerUIHelper")) //may already have the part if it was serialized on the player
+                        {
+                            player.AddPart<Egcb_PlayerUIHelper>(true);
+                        }
+                        NalathniAppraiseConnector appraiseLoader = new NalathniAppraiseConnector(); //initialize a new NalathniAppraiseExtender object to complete initial analysis and set up static values
                     }
-                    NalathniAppraiseConnector appraiseLoader = new NalathniAppraiseConnector(); //initialize a new NalathniAppraiseExtender object to complete initial analysis and set up static values
+                }
+                catch (Exception ex)
+                {
+                    Debug.Log("QudUX Mod: Encountered exception in coroutine segment 1.\nException: " + ex.ToString() + "\nAttempting to resume...");
                 }
                 if (GameManager.Instance.CurrentGameView == "Inventory"
                     || GameManager.Instance.CurrentGameView == "Journal"
@@ -211,34 +217,41 @@ namespace Egocarib.Code
                 {
                     this.UIMode = GameManager.Instance.CurrentGameView;
                     //TODO: should check whether the overlay inventory option is enabled, and don't do anything if it is.
-                    if (this.UIMode == "Journal")
+                    try
                     {
-                        this.JournalExtender = new Egcb_JournalExtender();
+                        if (this.UIMode == "Journal")
+                        {
+                            this.JournalExtender = new Egcb_JournalExtender();
+                        }
+                        else if (this.UIMode == "Inventory")
+                        {
+                            this.InventoryExtender = new Egcb_InventoryExtender();
+                        }
+                        else if (this.UIMode == "Trade")
+                        {
+                            Egcb_PlayerUIHelper.SetTraderInteraction();
+                            //one time call - don't need to monitor the menu itself
+                        }
+                        else if (this.UIMode == "ReviewCharacter")
+                        {
+                            this.ReviewCharExtender = new Egcb_ReviewCharExtender();
+                        }
+                        else if (this.UIMode == "WorldCreationProgress")
+                        {
+                            //Do nothing here (we're only tracking for when this state is removed)
+                        }
+                        else if (this.UIMode == "AbilityManager")
+                        {
+                            this.AbilityManagerExtender = new Egcb_AbilityManagerExtender();
+                            this.AbilityManagerExtender.UpdateAbilityDescriptions();
+                            //this is all we need to do for this one - a single update on menu open. No active monitoring/changes in the menu itself.
+                        }
+                        this.enabled = true;
                     }
-                    else if (this.UIMode == "Inventory")
+                    catch (Exception ex)
                     {
-                        this.InventoryExtender = new Egcb_InventoryExtender();
+                        Debug.Log("QudUX Mod: Encountered exception in coroutine segment 2.\nException: " + ex.ToString() + "\nAttempting to resume...");
                     }
-                    else if (this.UIMode == "Trade")
-                    {
-                        Egcb_PlayerUIHelper.SetTraderInteraction();
-                        //one time call - don't need to monitor the menu itself
-                    }
-                    else if (this.UIMode == "ReviewCharacter")
-                    {
-                        this.ReviewCharExtender = new Egcb_ReviewCharExtender();
-                    }
-                    else if (this.UIMode == "WorldCreationProgress")
-                    {
-                        //Do nothing here (we're only tracking for when this state is removed)
-                    }
-                    else if (this.UIMode == "AbilityManager")
-                    {
-                        this.AbilityManagerExtender = new Egcb_AbilityManagerExtender();
-                        this.AbilityManagerExtender.UpdateAbilityDescriptions();
-                        //this is all we need to do for this one - a single update on menu open. No active monitoring/changes in the menu itself.
-                    }
-                    this.enabled = true;
                     do { yield return new WaitForSeconds(coroutineShortYield); } while (this.enabled == true);
                 }
                 else
