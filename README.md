@@ -2,7 +2,7 @@
 Some minor tweaks and improvements to Qud menus/etc.
 
 Implementation overview:
-* The entry point is `Egcb_UILoader`, which is loaded as an `IPart` of the dummy object defined in `ObjectBlueprints.xml`.
+* The entry point is `Egcb_UILoader`, which is loaded via `[HasModSensitiveStaticCache]` and `[ModSensitiveCacheInit]` attributes.
 * `Egcb_UILoader` initializes `Egcb_UIMonitor`, which uses the Unity `Coroutine()` and `Update()` frameworks to monitor for when the user opens certain UI screens, such as the Journal screen, Inventory screen, or Character Creation - Complete screen. `Egcb_UIMonitor` also adds the `Egcb_PlayerUIHelper` part to the player, which does some additional event-based monitoring (such as listening for the PlayerBeginConversation event).
 * When a tracked UI screen is opened by the user, `Egcb_UIMonitor` instantiates a new object of type `Egcb_JournalExtender`, `Egcb_InventoryExtender`, `Egcb_ReviewCharExtender`, or `Egcb_AbilityManagerExtender`.
 * `Egcb_UIMonitor` calls `FrameCheck()` each frame on the \*Extender object, which then evaluates whether the menu screen needs to be updated with the mod's changes.
