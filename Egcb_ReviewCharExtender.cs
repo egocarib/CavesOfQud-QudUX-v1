@@ -15,6 +15,8 @@ namespace Egocarib.Code
         public static string TileToApply = string.Empty;
         public static string TileToApplyDetailColor;
         public static GameObject TileTarget;
+        private static int cachedTileIndex = -999;
+        private static int cachedColorIndex = -999;
         public readonly char previewTileForegroundColor;
         private bool bTileSelectorActive = false;
         private bool bInitialized = false;
@@ -28,7 +30,7 @@ namespace Egocarib.Code
         public readonly int tileBoxHeight = 7;
         public readonly int tileBoxStartX = 29;
         public readonly int tileBoxStartY = 2;
-        public List<Genkit.Tuple<string, string>> TileData;
+        public List<Tuple<string, string>> TileData;
         private int tileDataIndex;
         private int detailColorListIndex = -1;
         private readonly List<string> detailColorListStrings = new List<string>() { "b", "B", "c", "C", "g", "G", "w", "W", "o", "O", "r", "R", "m", "M", "Y", "y", "K", "k" };
@@ -69,11 +71,11 @@ namespace Egocarib.Code
             {
                 gameSubtypes.AddRange(subtypeClass.GetAllSubtypes());
             }
-            this.TileData = new List<Genkit.Tuple<string, string>>(gameSubtypes.Count);
+            this.TileData = new List<Tuple<string, string>>(gameSubtypes.Count);
             this.tileDataIndex = 0;
             foreach (SubtypeEntry subtype in gameSubtypes)
             {
-                this.TileData.Add(new Genkit.Tuple<string, string>(subtype.Tile, subtype.DetailColor));
+                this.TileData.Add(new Tuple<string, string>(subtype.Tile, subtype.DetailColor));
                 if (CreateCharacter.Template.Subtype == subtype.Name)
                 {
                     this.tileDataIndex = this.TileData.Count - 1;
@@ -92,6 +94,21 @@ namespace Egocarib.Code
                         break;
                     }
                 }
+            }
+            //restore cached tile indices if still relevant (this is used to preserve the player's choice after entering a world seed,
+            //because QudUX interprets that as a screen transition (to Popup:AskString) and re-instantiates a new version of this class.
+            if (Egcb_ReviewCharExtender.TileTarget == CreateCharacter.Template.PlayerBody)
+            {
+                if (Egcb_ReviewCharExtender.cachedTileIndex != -999)
+                {
+                    this.tileDataIndex = Egcb_ReviewCharExtender.cachedTileIndex;
+                    Egcb_ReviewCharExtender.cachedTileIndex = -999;
+                    this.detailColorListIndex = Egcb_ReviewCharExtender.cachedColorIndex != -999 ? Egcb_ReviewCharExtender.cachedColorIndex : -1;
+                    Egcb_ReviewCharExtender.cachedColorIndex = -999;
+                    this.SaveCustomTile();
+                    this.bWasShown = true;
+                }
+                
             }
         }
 
@@ -127,22 +144,38 @@ namespace Egocarib.Code
                         errorMessage = "Character 'M' already reserved by another action on the [ Character Creation - Complete ] screen.";
                     }
                 }
-                for (int i = 23; i < 50; i++)
+                //acceptible options (empty or we already wrote it to the buffer before a popup appeared/etc)
+                string expectedModifyLineString = "                                   ";
+                if (scrapBuffer[17, 23].Char == 'M')
                 {
-                    if (scrapBuffer[17, 23].Char != ' ') //something else is already in the blank row we were planning on adding this option to
+                    if (scrapBuffer[21, 23].Char == 'M')
+                    {
+                        expectedModifyLineString = "M - Modify character sprite        ";
+                    }
+                    else if (scrapBuffer[21, 23].Char == 'C')
+                    {
+                        expectedModifyLineString = "M - Confirm & save sprite          ";
+                    }
+                }
+                for (int i = 17; i < 50; i++)
+                {
+                    if (scrapBuffer[i, 23].Char != expectedModifyLineString[i - 17]) //something unexpected is already in the row we were planning on adding this option to
                     {
                         this.bDisabled = true;
                         errorMessage = "Screen text already present in location where Character Tile option was going to be added on the [ Character Creation - Complete ] screen.";
                     }
                 }
-                for (int x = this.tileBoxStartX; x < this.tileBoxStartX + this.tileBoxWidth; x++)
+                if (expectedModifyLineString[0] == ' ') //only check if we didn't already add the option (i.e. after Enter World Seed popup, we already drew this stuff)
                 {
-                    for (int y = this.tileBoxStartY; y < this.tileBoxStartY + this.tileBoxHeight; y++)
+                    for (int x = this.tileBoxStartX; x < this.tileBoxStartX + this.tileBoxWidth; x++)
                     {
-                        if (scrapBuffer[x, y].Char != ' ')
+                        for (int y = this.tileBoxStartY; y < this.tileBoxStartY + this.tileBoxHeight; y++)
                         {
-                            this.bDisabled = true;
-                            errorMessage = "Character Tile option can't be added because unexpected text found at coordinates " + x + ", " + y + " on the [ Character Creation - Complete ] screen.";
+                            if (scrapBuffer[x, y].Char != ' ')
+                            {
+                                this.bDisabled = true;
+                                errorMessage = "Character Tile option can't be added because unexpected text found at coordinates " + x + ", " + y + " on the [ Character Creation - Complete ] screen.";
+                            }
                         }
                     }
                 }
@@ -179,6 +212,8 @@ namespace Egocarib.Code
                 this.ClearTileBox(scrapBuffer);
                 if (this.bWasShown)
                 {
+                    scrapBuffer.Goto(this.tileBoxStartX + 1, this.tileBoxStartY);
+                    scrapBuffer.Write("[ &GSprite&y ]");
                     this.DrawTiles(scrapBuffer, true);
                 }
             }
@@ -413,6 +448,8 @@ namespace Egocarib.Code
                 Egcb_ReviewCharExtender.TileTarget = CreateCharacter.Template.PlayerBody;
                 Egcb_ReviewCharExtender.TileToApply = this.TileData[this.tileDataIndex].Item1;
                 Egcb_ReviewCharExtender.TileToApplyDetailColor = (this.detailColorListIndex >= 0) ? this.detailColorListStrings[this.detailColorListIndex] : this.TileData[this.tileDataIndex].Item2;
+                Egcb_ReviewCharExtender.cachedColorIndex = (this.detailColorListIndex >= 0) ? this.detailColorListIndex : -999;
+                Egcb_ReviewCharExtender.cachedTileIndex = this.tileDataIndex;
             }
         }
 
@@ -424,6 +461,8 @@ namespace Egocarib.Code
                 Egcb_ReviewCharExtender.TileTarget.pRender.DetailColor = Egcb_ReviewCharExtender.TileToApplyDetailColor;
                 Egcb_ReviewCharExtender.TileTarget = null;
                 Egcb_ReviewCharExtender.TileToApply = string.Empty;
+                Egcb_ReviewCharExtender.cachedColorIndex = -999;
+                Egcb_ReviewCharExtender.cachedTileIndex = -999;
             }
         }
     }

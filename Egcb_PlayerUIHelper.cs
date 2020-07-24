@@ -4,7 +4,7 @@ using Qud.API;
 using XRL.Language;
 using XRL.Core;
 using XRL.Rules;
-using XRL.World.Parts.Effects;
+using XRL.World.Effects;
 using XRL.UI;
 using System;
 using System.Text.RegularExpressions;
@@ -205,66 +205,68 @@ namespace XRL.World.Parts
             Egcb_PlayerUIHelper.AddChoiceToRestockers();
         }
 
-        public override bool BeforeRender(Event E)
-        {
-            //This function updates MessageQueue messages so that colors appear appropriately in the Sidebar message log (and the fullscreen message log)
-            //It works by applying color to every word so that linebreaks don't reset words to the default color.
-            if (XRLCore.Core.Game.Player.Messages.Cache_0_12Valid)
-            {
-                //do nothing if cache is valid
-            }
-            else
-            {
-                try
-                {
-                    //update the most recent 12 lines in the MessageQueue to ensure that color gets applied to every word.
-                    List<string> messages = XRLCore.Core.Game.Player.Messages.Messages;
-                    for (int i = Math.Max(messages.Count - 12, 0); i < messages.Count; i++)
-                    {
-                        string message = messages[i];
-                        if (!message.Contains("&"))
-                        {
-                            continue;
-                        }
-                        string newMessage = string.Empty;
-                        string colorString = string.Empty;
-                        //iterate through words split by spaces. Technically this doesn't account properly for linebreak '\n' characters in a
-                        //message, but those are rare and every example I've seen uses the default &y at the beginning of the new line anyway
-                        foreach (string word in message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
-                        {
-                            if (!string.IsNullOrEmpty(newMessage))
-                            {
-                                newMessage += " ";
-                            }
-                            string newWord = word;
-                            if (!newWord.Contains("&"))
-                            {
-                                newWord = colorString + newWord;
-                            }
-                            else
-                            {
-                                if (newWord.IndexOf("&") != 0)
-                                {
-                                    newWord = colorString + newWord;
-                                }
-                                Match colorMatch = Regex.Match(word, this.ColorMatchPattern, RegexOptions.RightToLeft);
-                                if (colorMatch.Success)
-                                {
-                                    colorString = colorMatch.Value;
-                                }
-                            }
-                            newMessage += newWord;
-                        }
-                        messages[i] = newMessage;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.Log("QudUX Mod: Error trying to update color formatting in message log. (Exception: " + ex.ToString() + ")");
-                }
-            }
-            return base.BeforeRender(E);
-        }
+        //The following is no longer required because this issue has been fixed in the core game since 2.0.200.79 (or an earlier version)
+        //
+        //public override bool BeforeRender(Event E)
+        //{
+        //    //This function updates MessageQueue messages so that colors appear appropriately in the Sidebar message log (and the fullscreen message log)
+        //    //It works by applying color to every word so that linebreaks don't reset words to the default color.
+        //    if (XRLCore.Core.Game.Player.Messages.Cache_0_12Valid)
+        //    {
+        //        //do nothing if cache is valid
+        //    }
+        //    else
+        //    {
+        //        try
+        //        {
+        //            //update the most recent 12 lines in the MessageQueue to ensure that color gets applied to every word.
+        //            List<string> messages = XRLCore.Core.Game.Player.Messages.Messages;
+        //            for (int i = Math.Max(messages.Count - 12, 0); i < messages.Count; i++)
+        //            {
+        //                string message = messages[i];
+        //                if (!message.Contains("&"))
+        //                {
+        //                    continue;
+        //                }
+        //                string newMessage = string.Empty;
+        //                string colorString = string.Empty;
+        //                //iterate through words split by spaces. Technically this doesn't account properly for linebreak '\n' characters in a
+        //                //message, but those are rare and every example I've seen uses the default &y at the beginning of the new line anyway
+        //                foreach (string word in message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+        //                {
+        //                    if (!string.IsNullOrEmpty(newMessage))
+        //                    {
+        //                        newMessage += " ";
+        //                    }
+        //                    string newWord = word;
+        //                    if (!newWord.Contains("&"))
+        //                    {
+        //                        newWord = colorString + newWord;
+        //                    }
+        //                    else
+        //                    {
+        //                        if (newWord.IndexOf("&") != 0)
+        //                        {
+        //                            newWord = colorString + newWord;
+        //                        }
+        //                        Match colorMatch = Regex.Match(word, this.ColorMatchPattern, RegexOptions.RightToLeft);
+        //                        if (colorMatch.Success)
+        //                        {
+        //                            colorString = colorMatch.Value;
+        //                        }
+        //                    }
+        //                    newMessage += newWord;
+        //                }
+        //                messages[i] = newMessage;
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Debug.Log("QudUX Mod: Error trying to update color formatting in message log. (Exception: " + ex.ToString() + ")");
+        //        }
+        //    }
+        //    return base.BeforeRender(E);
+        //}
 
         public static bool AddChoiceToRestockers(Conversation convo = null, GameObject speaker = null)
         {

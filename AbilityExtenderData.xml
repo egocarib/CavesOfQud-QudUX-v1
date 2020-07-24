@@ -5,6 +5,15 @@
     <abilityEntry Name="Inflate Axons" Class="Cybernetics" Command="" BaseCooldown="100"></abilityEntry>
     <abilityEntry Name="Night Vision" Class="Cybernetics" Command="CommandToggleCyberNightVision" CustomDescription="You see in the dark."></abilityEntry>
     <abilityEntry Name="Toggle Night Vision" Class="Cybernetics" Command="CommandToggleNightVision" CustomDescription="You see in the dark."></abilityEntry>
+    <abilityEntry Name="Recomposite" Class="Cybernetics" Command="" BaseCooldown="50"></abilityEntry>
+    <abilityEntry Name="Anomaly Fumigator" Class="Cybernetics" Command="CommandToggleAnomalyFumigator" CustomDescription="You emit clouds of normality gas every turn."></abilityEntry>
+    <abilityEntry Name="Phase Harmonic Modulator" Class="Cybernetics" Command="CommandTogglePhaseHarmonicModulator" CustomDescription="You can interact with both in-phase and out-of-phase objects and creatures."></abilityEntry>
+    <abilityEntry Name="Penetrating Radar" Class="Cybernetics" Command="CommandTogglePenetratingRadar" CustomDescription="Gain total visibility in a radius of 10 spaces around you, blocked only by force fields and spacetime anomalies."></abilityEntry>
+    <abilityEntry Name="Imprint with current location" Class="Cybernetics" Command="CommandActivateOnboardRecoilerImprinting" BaseCooldown="100" CustomDescription="Imprint your onboard recoiler implant with the current location."></abilityEntry>
+    <abilityEntry Name="Recoil" Class="Cybernetics" Command="CommandActivateOnboardRecoilerTeleporter" BaseCooldown="50" CustomDescription="Recoil to the location you last imprinted with your onboard recoiler implant."></abilityEntry>
+    <abilityEntry Name="Fire Suppression" Class="Cybernetics" Command="CommandToggleFireSuppressionSystem" CustomDescription="Automatically discharges flame-retardant gel every turn you're on fire."></abilityEntry>
+    <abilityEntry Name="Medassist Module" Class="Cybernetics" Command="CommandToggleMedassistModule" CustomDescription="Toggle whether your medassist module implant AI automatically applies loaded injectors."></abilityEntry>
+    <abilityEntry Name="Anchor Spikes" Class="Cybernetics" Command="CommandToggleAnchorSpikes" CustomDescription="You cannot be forced to move by physical means."></abilityEntry>
   </category>
 
   <category Name="Items">

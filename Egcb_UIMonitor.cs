@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using XRL.Core;
 using XRL.World.Parts;
+using Egocarib.Console;
 
 namespace Egocarib.Code
 {
@@ -14,6 +15,7 @@ namespace Egocarib.Code
         private string UIMode;
         private int waitForUIFrames = 0;
         private string UISubmode = string.Empty;
+        //private bool pasteKeysPressed = false;
         private Egcb_JournalExtender JournalExtender;
         private Egcb_InventoryExtender InventoryExtender;
         private Egcb_ReviewCharExtender ReviewCharExtender;
@@ -31,6 +33,7 @@ namespace Egocarib.Code
             //all menu/pop-up views) use a shorter coroutine yield to allow processing stuff quickly while menus are open
             { "FireMissileWeapon" , coroutineLongYield },
             { "Game"              , coroutineLongYield },
+            { "Stage"             , coroutineLongYield },
             { "Looker"            , coroutineLongYield },
             { "PickDirection"     , coroutineLongYield },
             { "PickField"         , coroutineLongYield },
@@ -128,6 +131,51 @@ namespace Egocarib.Code
                     this.LookTiler.FrameCheck();
                 }
             }
+            else if (this.UIMode == "Popup:AskString")
+            {
+                //technically this "works" except that Popup:AskString doesn't care about whatever I send to Keyboard.PushKey for some reason I haven't been able to decipher.
+
+                //if (XRL.Rules.Stat.Random(1,150) == 1)
+                //{
+                //    Debug.Log("QudUX Mod: DEBUG - pushed 'f' key.");
+                //    ConsoleLib.Console.Keyboard.PushKey(KeyCode.F);
+                //    ConsoleLib.Console.Keyboard.vkCode = ConsoleLib.Console.Keys.F;
+                //    ConsoleLib.Console.Keyboard.Char = (int)'f';
+                //}
+                //if (((Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl)) && Input.GetKey(KeyCode.V))
+                //    || ((Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)) && Input.GetKey(KeyCode.Insert)))
+                //{
+                //    if (this.pasteKeysPressed)
+                //    {
+                //        return; //already processed this keypress
+                //    }
+                //    this.pasteKeysPressed = true;
+                //    bool cachedInputBufferState = GameManager.bCapInputBuffer;
+                //    try
+                //    {
+                //        string clipText = XRL.UI.CreateCharacter.ClipboardHelper.clipBoard;
+                //        if (!string.IsNullOrEmpty(clipText) && clipText.Length <= 999)
+                //        {
+                //            StringKeyCoder codes = new StringKeyCoder(clipText);
+                //            GameManager.bCapInputBuffer = false;
+                //            foreach (KeyCode kc in codes.StringKeyCodes)
+                //            {
+                //                ConsoleLib.Console.Keyboard.PushKey(kc);
+                //            }
+                //            GameManager.bCapInputBuffer = cachedInputBufferState;
+                //        }
+                //    }
+                //    catch (Exception ex)
+                //    {
+                //        Debug.Log("QudUX Mod: Encountered exception while trying to paste into Popup.\nException: " + ex.ToString());
+                //        GameManager.bCapInputBuffer = cachedInputBufferState;
+                //    }
+                //}
+                //else
+                //{
+                //    this.pasteKeysPressed = false;
+                //}
+            }
             else if (this.UIMode == "Conversation")
             {
                 if (this.UISubmode == "ConversationTiler")
@@ -201,7 +249,7 @@ namespace Egocarib.Code
                         {
                             player.AddPart<Egcb_PlayerUIHelper>(true);
                         }
-                        NalathniAppraiseConnector appraiseLoader = new NalathniAppraiseConnector(); //initialize a new NalathniAppraiseExtender object to complete initial analysis and set up static values
+                        new NalathniAppraiseConnector(); //initialize a new NalathniAppraiseExtender object to complete initial analysis and set up static values
                     }
                 }
                 catch (Exception ex)
@@ -213,7 +261,8 @@ namespace Egocarib.Code
                     || GameManager.Instance.CurrentGameView == "ReviewCharacter"
                     || GameManager.Instance.CurrentGameView == "WorldCreationProgress"
                     || GameManager.Instance.CurrentGameView == "AbilityManager"
-                    || GameManager.Instance.CurrentGameView == "Trade")
+                    || GameManager.Instance.CurrentGameView == "Trade"
+                    || GameManager.Instance.CurrentGameView == "Popup:AskString")
                 {
                     this.UIMode = GameManager.Instance.CurrentGameView;
                     //TODO: should check whether the overlay inventory option is enabled, and don't do anything if it is.
@@ -239,6 +288,10 @@ namespace Egocarib.Code
                         else if (this.UIMode == "WorldCreationProgress")
                         {
                             //Do nothing here (we're only tracking for when this state is removed)
+                        }
+                        else if (this.UIMode == "Popup:AskString")
+                        {
+                            //Do nothing here - we'll listen for keypresses in Egcb_UIMonitor.Update() [not actually implemented]
                         }
                         else if (this.UIMode == "AbilityManager")
                         {

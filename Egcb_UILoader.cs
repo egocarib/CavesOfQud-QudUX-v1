@@ -3,17 +3,17 @@ using Egocarib.Code;
 
 namespace XRL.World.Parts
 {
-    public class Egcb_UILoader : IPart
+    [HasModSensitiveStaticCache]
+    public static class Egcb_UILoader
     {
         private static UnityEngine.GameObject monitorObject; //used for activating monobehavior (different from Qud's typical GameObject type)
-        private static bool bStarted;
+        private static bool bStarted = false;
 
-        public Egcb_UILoader()
-        {
-            Egcb_UILoader.Bootup();
-        }
-
-        private static void Bootup()
+        /// <summary>
+        /// Called on game startup. Can potentially be called multiple times if mod loadout changes.
+        /// </summary>
+        [ModSensitiveCacheInit]
+        public static void Bootup()
         {
             if (Egcb_UILoader.bStarted == true)
             {
@@ -24,7 +24,7 @@ namespace XRL.World.Parts
             Egcb_UILoader.StartOptionsMonitor();
         }
 
-        static private void StartOptionsMonitor()
+        private static void StartOptionsMonitor()
         {
             if (!Egcb_UIMonitor.IsActive)
             {

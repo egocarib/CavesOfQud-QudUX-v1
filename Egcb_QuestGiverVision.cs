@@ -1,7 +1,8 @@
 ﻿using System;
 using XRL.Core;
+using XRL.World.Parts;
 
-namespace XRL.World.Parts.Effects
+namespace XRL.World.Effects
 {
     [Serializable]
     public class Egcb_QuestGiverVision : Effect
