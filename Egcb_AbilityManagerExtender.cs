@@ -44,7 +44,7 @@ namespace Egocarib.Code
         public Egcb_AbilityData() //instantiated when the Manage Abilities UI window opens
         {
             //load mutations from player
-            Mutations playerMutationData = XRLCore.Core.Game.Player.Body.GetPart<Mutations>();
+            Mutations playerMutationData = XRLCore.Core?.Game?.Player?.Body?.GetPart<Mutations>();
             if (playerMutationData != null)
             {
                 this.PlayerMutations = playerMutationData.ActiveMutationList;
@@ -72,15 +72,18 @@ namespace Egocarib.Code
 
         public static Dictionary<Guid, string> LoadAbilityData()
         {
-            if (!XRLCore.Core.Game.Player.Body.HasPart("Egcb_PlayerUIHelper"))
+            Dictionary<Guid, string> originalAbilityDescriptions = new Dictionary<Guid, string>();
+            GameObject playerBody = XRLCore.Core?.Game?.Player?.Body;
+            if (playerBody != null)
             {
-                Debug.Log("QudUX Mod: Unexpectedly failed to load some ability data. This might affect Activated Ability description generation.");
-                return new Dictionary<Guid, string>();
-            }
-            Dictionary<Guid, string> originalAbilityDescriptions = XRLCore.Core.Game.Player.Body.GetPart<Egcb_PlayerUIHelper>().DefaultAbilityDescriptions;
-            if (originalAbilityDescriptions == null)
-            {
-                originalAbilityDescriptions = new Dictionary<Guid, string>();
+                if (!playerBody.HasPart("Egcb_PlayerUIHelper"))
+                {
+                    Debug.Log("QudUX Mod: Unexpectedly failed to load ability data from the player body. QudUX might be unable to show improved descriptions on the activated ability screen.");
+                }
+                else
+                {
+                    originalAbilityDescriptions = playerBody.GetPart<Egcb_PlayerUIHelper>().DefaultAbilityDescriptions;
+                }
             }
             return originalAbilityDescriptions;
         }

@@ -112,7 +112,7 @@ namespace Egocarib.Code
             //overkill for now - this should probably work for most realistic cases.
             if (this.InventoryList.Count <= 0)
             {
-                GameObject playerCurrentBody = XRLCore.Core.Game?.Player?.Body;
+                GameObject playerCurrentBody = XRLCore.Core?.Game?.Player?.Body;
                 Inventory inventory = playerCurrentBody?.GetPart("Inventory") as Inventory;
                 if (inventory == null)
                 {

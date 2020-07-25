@@ -14,7 +14,7 @@ namespace Egocarib.Code
     {
         public readonly char ExploredLocationSymbol = '\u00fb'; //checkmark
         public readonly char UnexploredLocationSymbol = '?';
-        private ConsoleChar AppliedSymbol; //use to track if the screen has been updated - check each frame
+        private ConsoleChar AppliedSymbol = null; //use to track if the screen has been updated - check each frame
         private readonly ConsoleChar LocationTabChar = TextConsole.CurrentBuffer[3, 2]; //reference preserved for efficiency
         private readonly ushort WChar = 22;
         private Dictionary<string, List<JournalFacts>> CachedRelevantJournalNotesByName = new Dictionary<string, List<JournalFacts>>();

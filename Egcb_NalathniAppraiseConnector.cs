@@ -25,7 +25,7 @@ namespace Egocarib.Code
             {
                 if (this._bPreventPlayerAppraisal == null)
                 {
-                    GameObject player = XRLCore.Core.Game?.Player?.Body;
+                    GameObject player = XRLCore.Core?.Game?.Player?.Body;
                     this._bPreventPlayerAppraisal = (NalathniAppraiseConnector._bAppraiseSkillExists && player != null && !player.HasSkill("NalathniAppraise"));
                 }
                 return (bool)this._bPreventPlayerAppraisal;
@@ -38,7 +38,7 @@ namespace Egocarib.Code
             {
                 if (this._bCanAppraise == null)
                 {
-                    GameObject player = XRLCore.Core.Game?.Player?.Body;
+                    GameObject player = XRLCore.Core?.Game?.Player?.Body;
                     this._bCanAppraise = (NalathniAppraiseConnector._bAppraiseSkillExists && player != null && player.HasSkill("NalathniAppraise"));
                     if (this._bCanAppraise == true)
                     {

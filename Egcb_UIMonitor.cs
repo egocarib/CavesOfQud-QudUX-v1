@@ -234,10 +234,11 @@ namespace Egocarib.Code
                 //    Debug.Log("QudUX Debug: CurrentGameView == " + GameManager.Instance.CurrentGameView);
                 //}
                 ////DEBUG ONLY
+
                 try
                 {
-                    if (XRLCore.Core.Game?.Player?.Body != this.latestGoWithTrackingPart
-                        && XRLCore.Core.Game?.Player?.Body != null
+                    if (XRLCore.Core?.Game?.Player?.Body != this.latestGoWithTrackingPart
+                        && XRLCore.Core?.Game?.Player?.Body != null
                         && !gameObjsWithTrackingPart.CleanContains(XRLCore.Core.Game.Player.Body)
                         && !XRLCore.Core.Game.Player.Body.IsNowhere()) //IsNowhere forces us to wait for player to be initialized (otherwise duplicate part won't be loaded from serialization yet and we erroneously add another)
                     {
@@ -249,13 +250,21 @@ namespace Egocarib.Code
                         {
                             player.AddPart<Egcb_PlayerUIHelper>(true);
                         }
-                        new NalathniAppraiseConnector(); //initialize a new NalathniAppraiseExtender object to complete initial analysis and set up static values
+                        try
+                        {
+                            new NalathniAppraiseConnector(); //initialize a new NalathniAppraiseExtender object to complete initial analysis and set up static values
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.Log("QudUX Mod: (Warning) Unable to check if compatible 'Appraise Skill' mod is installed. Details:\n" + ex.ToString());
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.Log("QudUX Mod: Encountered exception in coroutine segment 1.\nException: " + ex.ToString() + "\nAttempting to resume...");
+                    Debug.Log("QudUX Mod: Encountered exception in coroutine segment 1.\n  Exception:" + ex.ToString() + "\nAttempting to resume...");
                 }
+
                 if (GameManager.Instance.CurrentGameView == "Inventory"
                     || GameManager.Instance.CurrentGameView == "Journal"
                     || GameManager.Instance.CurrentGameView == "ReviewCharacter"
@@ -270,20 +279,48 @@ namespace Egocarib.Code
                     {
                         if (this.UIMode == "Journal")
                         {
-                            this.JournalExtender = new Egcb_JournalExtender();
+                            try
+                            {
+                                this.JournalExtender = new Egcb_JournalExtender();
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.Log("QudUX Mod: Encountered exception in Journal extender.\n  Exception: " + ex.ToString() + "\nAttempting to resume...");
+                            }
                         }
                         else if (this.UIMode == "Inventory")
                         {
-                            this.InventoryExtender = new Egcb_InventoryExtender();
+                            try
+                            {
+                                this.InventoryExtender = new Egcb_InventoryExtender();
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.Log("QudUX Mod: Encountered exception in Inventory extender.\n  Exception: " + ex.ToString() + "\nAttempting to resume...");
+                            }
                         }
                         else if (this.UIMode == "Trade")
                         {
-                            Egcb_PlayerUIHelper.SetTraderInteraction();
-                            //one time call - don't need to monitor the menu itself
+                            try
+                            {
+                                Egcb_PlayerUIHelper.SetTraderInteraction();
+                                //one time call - don't need to monitor the menu itself
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.Log("QudUX Mod: Encountered exception in Trader extender.\n  Exception: " + ex.ToString() + "\nAttempting to resume...");
+                            }
                         }
                         else if (this.UIMode == "ReviewCharacter")
                         {
-                            this.ReviewCharExtender = new Egcb_ReviewCharExtender();
+                            try
+                            {
+                                this.ReviewCharExtender = new Egcb_ReviewCharExtender();
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.Log("QudUX Mod: Encountered exception in Character Creation extender.\n  Exception: " + ex.ToString() + "\nAttempting to resume...");
+                            }
                         }
                         else if (this.UIMode == "WorldCreationProgress")
                         {
@@ -295,15 +332,22 @@ namespace Egocarib.Code
                         }
                         else if (this.UIMode == "AbilityManager")
                         {
-                            this.AbilityManagerExtender = new Egcb_AbilityManagerExtender();
-                            this.AbilityManagerExtender.UpdateAbilityDescriptions();
-                            //this is all we need to do for this one - a single update on menu open. No active monitoring/changes in the menu itself.
+                            try
+                            {
+                                this.AbilityManagerExtender = new Egcb_AbilityManagerExtender();
+                                this.AbilityManagerExtender.UpdateAbilityDescriptions();
+                                //this is all we need to do for this one - a single update on menu open. No active monitoring/changes in the menu itself.
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.Log("QudUX Mod: Encountered exception in ability description extender.\n  Exception: " + ex.ToString() + "\nAttempting to resume...");
+                            }
                         }
                         this.enabled = true;
                     }
                     catch (Exception ex)
                     {
-                        Debug.Log("QudUX Mod: Encountered exception in coroutine segment 2.\nException: " + ex.ToString() + "\nAttempting to resume...");
+                        Debug.Log("QudUX Mod: Encountered exception in coroutine segment 2.\n  Exception: " + ex.ToString() + "\nAttempting to resume...");
                     }
                     do { yield return new WaitForSeconds(coroutineShortYield); } while (this.enabled == true);
                 }

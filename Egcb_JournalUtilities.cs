@@ -31,23 +31,30 @@ namespace Egocarib.Code
 
         public static void RenameForgottenRuins()
         {
-            if (Egcb_JournalUtilities.bRenamedForgottenRuins)
+            try
             {
-                return;
-            }
-            Egcb_JournalUtilities.bRenamedForgottenRuins = true;
-            //string debugVal = String.Empty;
-            List<JournalMapNote> mapNotes = JournalAPI.MapNotes;
-            foreach (JournalMapNote jnote in mapNotes)
-            {
-                if (jnote.text == "some forgotten ruins")
+                if (Egcb_JournalUtilities.bRenamedForgottenRuins)
                 {
-                    //debugVal += "\n  some forgotten ruins - " + XRL.LoreGenerator.GenerateLandmarkDirectionsTo(jnote.zoneid, !string.IsNullOrEmpty(XRLCore.Core.Game.GetStringGameState("villageZeroName", string.Empty)));
-                    Egcb_JournalUtilities.ResetZoneNameForMapNote(jnote);
-                    //Debug.Log("QudUX Mod: renamed zone " + jnote.zoneid + " from 'some forgotten ruins' to '" + jnote.text + "'\n        full data: " + jnote.GetDisplayText());
+                    return;
                 }
+                Egcb_JournalUtilities.bRenamedForgottenRuins = true;
+                //string debugVal = String.Empty;
+                List<JournalMapNote> mapNotes = JournalAPI.MapNotes;
+                foreach (JournalMapNote jnote in mapNotes)
+                {
+                    if (jnote.text == "some forgotten ruins")
+                    {
+                        //debugVal += "\n  some forgotten ruins - " + XRL.LoreGenerator.GenerateLandmarkDirectionsTo(jnote.zoneid, !string.IsNullOrEmpty(XRLCore.Core.Game.GetStringGameState("villageZeroName", string.Empty)));
+                        Egcb_JournalUtilities.ResetZoneNameForMapNote(jnote);
+                        //Debug.Log("QudUX Mod: renamed zone " + jnote.zoneid + " from 'some forgotten ruins' to '" + jnote.text + "'\n        full data: " + jnote.GetDisplayText());
+                    }
+                }
+                //Debug.Log("QudUX Mod: Forgotten Ruins Test...\n" + debugVal);
             }
-            //Debug.Log("QudUX Mod: Forgotten Ruins Test...\n" + debugVal);
+            catch (Exception ex)
+            {
+                Debug.Log("QudUX Mod: Encountered exception while trying to rename 'forgotten ruins' locations.\n  Exception: " + ex.ToString() + "\nAttempting to resume...");
+            }
         }
 
         public static bool ValidateUniqueJournalName(string name)
