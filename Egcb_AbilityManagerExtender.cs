@@ -72,7 +72,7 @@ namespace Egocarib.Code
 
         public static Dictionary<Guid, string> LoadAbilityData()
         {
-            Dictionary<Guid, string> originalAbilityDescriptions = new Dictionary<Guid, string>();
+            Dictionary<Guid, string> originalAbilityDescriptions = null;
             GameObject playerBody = XRLCore.Core?.Game?.Player?.Body;
             if (playerBody != null)
             {
@@ -85,7 +85,7 @@ namespace Egocarib.Code
                     originalAbilityDescriptions = playerBody.GetPart<Egcb_PlayerUIHelper>().DefaultAbilityDescriptions;
                 }
             }
-            return originalAbilityDescriptions;
+            return (originalAbilityDescriptions == null) ? new Dictionary<Guid, string>() : originalAbilityDescriptions;
         }
 
         public bool SaveAbilityData()
@@ -106,36 +106,47 @@ namespace Egocarib.Code
             {
                 return;
             }
-
-            bool hasMeaningfulDescription;
-            if (Egcb_AbilityData.AbilitiesWithoutRealDescriptions.Contains(ability.ID))
+            try
             {
-                hasMeaningfulDescription = false;
-            }
-            else
-            {
-                string vanillaDescription = this.VanillaDescriptionText.ContainsKey(ability.ID) ? this.VanillaDescriptionText[ability.ID] : ability.Description;
-                string simplifiedName = this.SimplifiedAbilityName(ability.DisplayName);
-                hasMeaningfulDescription = !string.IsNullOrEmpty(vanillaDescription)
-                    && ability.DisplayName != vanillaDescription
-                    && simplifiedName != vanillaDescription
-                    && !simplifiedName.StartsWith(vanillaDescription);
-            }
-            if (!hasMeaningfulDescription)
-            {
-                Egcb_AbilityData.AbilitiesWithoutRealDescriptions.Add(ability.ID);
+                //always update mutation descriptions because they can include changing Level text, etc.
                 if (category == "Mental Mutation" || category == "Mutation" || category == "Physical Mutation")
                 {
                     this.UpdateMutationAbilityDescription(category, ability);
                 }
+                //handle other ability descriptions
                 else
                 {
-                    this.UpdateNonMutationAbilityDescription(category, ability);
+                    bool hasMeaningfulDescription;
+                    if (Egcb_AbilityData.AbilitiesWithoutRealDescriptions.Contains(ability.ID))
+                    {
+                        hasMeaningfulDescription = false;
+                    }
+                    else
+                    {
+                        string vanillaDescription = this.VanillaDescriptionText.ContainsKey(ability.ID) ? this.VanillaDescriptionText[ability.ID] : ability.Description;
+                        string simplifiedName = this.SimplifiedAbilityName(ability.DisplayName);
+                        hasMeaningfulDescription = !string.IsNullOrEmpty(vanillaDescription)
+                            && ability.DisplayName != vanillaDescription
+                            && simplifiedName != vanillaDescription
+                            && !simplifiedName.StartsWith(vanillaDescription);
+                    }
+                    if (!hasMeaningfulDescription)
+                    {
+                        Egcb_AbilityData.AbilitiesWithoutRealDescriptions.Add(ability.ID);
+                        this.UpdateNonMutationAbilityDescription(category, ability);
+                    }
+                    else //already has a meaningful description. Append cooldown info to the existing description.
+                    {
+                        this.AddCooldownToPrexistingAbilityDescription(category, ability);
+                    }
                 }
             }
-            else //already has a meaningful description. Append cooldown info to the existing description.
+            catch (Exception ex)
             {
-                this.AddCooldownToPrexistingAbilityDescription(category, ability);
+                string abilityName = ability?.DisplayName;
+                string abilityCmd = ability?.Command;
+                string abilityInfo = "'" + (string.IsNullOrEmpty(abilityName) ? "NULL" : abilityName) + "' [" + (string.IsNullOrEmpty(abilityCmd) ? "NULL" : abilityCmd) + "]";
+                Debug.Log("QudUX Mod: Unable to update ability description for ability " + abilityInfo + ".\n  Exception: " + ex.ToString());
             }
         }
 
