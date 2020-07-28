@@ -20,7 +20,6 @@ namespace Egocarib.Code
     [HarmonyPatch]
     public class Patch_XRL_Annals_QudHistoryFactory
     {
-        //static MethodInfo Method_StatRandom = typeof(XRL.Rules.Stat).GetMethod("Random", new Type[] { typeof(int), typeof(int) });
         static Type QudHistoryFactoryType = AccessTools.TypeByName("XRL.Annals.QudHistoryFactory");
         static MethodInfo Method_StatRandom = SymbolExtensions.GetMethodInfo(() => XRL.Rules.Stat.Random(0, 80));
 
@@ -35,9 +34,10 @@ namespace Egocarib.Code
         }
 
         /// <summary>
-        /// Testing Postfix patch. Just outputs the Ruin site names the game is generating.
+        /// Postfix patch. Prevents duplicate ruins names from being generated - tries to generate a new name if
+        /// the name has already been used. This is surprisingly common (especially after we remove "some
+        /// forgotten ruins" from the picture). Ultimately this ensures all ruins names are unique.
         /// </summary>
-        /// <param name="__result"></param>
         [HarmonyPostfix]
         static void Postfix(ref string __result)
         {
@@ -46,7 +46,7 @@ namespace Egocarib.Code
             {
                 if (ct++ > 10)
                 {
-                    //In practice, I've never seen this take more than 2 attempts
+                    //In practice, I've never seen this take more than 2 attempts, but adding a short circuit just in case.
                     XRLCore.Log("QudUX: (Warning) Failed to find a suitable name for Ruins location after >10 attempts. Allowing duplicate name: " + __result);
                     break;
                 }
