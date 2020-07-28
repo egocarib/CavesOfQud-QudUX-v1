@@ -6,7 +6,6 @@ using Qud.API;
 using XRL;
 using XRL.UI;
 using XRL.Core;
-using Egcb_JournalUtilities = Egocarib.Code.Egcb_JournalUtilities;
 
 namespace Egocarib.Code
 {
@@ -16,14 +15,9 @@ namespace Egocarib.Code
         public readonly char UnexploredLocationSymbol = '?';
         private ConsoleChar AppliedSymbol = null; //use to track if the screen has been updated - check each frame
         private readonly ConsoleChar LocationTabChar = TextConsole.CurrentBuffer[3, 2]; //reference preserved for efficiency
-        private readonly ushort WChar = 22;
+        private readonly ushort WChar = 22; //22 = W  (there's no easy map to read from for this)
         private Dictionary<string, List<JournalFacts>> CachedRelevantJournalNotesByName = new Dictionary<string, List<JournalFacts>>();
         private List<string> ErroredJournalScreenStrings = new List<string>();
-
-        public Egcb_JournalExtender()
-        {
-            Egcb_JournalUtilities.RenameForgottenRuins();
-        }
 
         public void FrameCheck() //called each frame
         {
@@ -64,7 +58,8 @@ namespace Egocarib.Code
                         {
                             if (!this.ErroredJournalScreenStrings.Contains(locationName))
                             {
-                                Debug.Log("QudUX Mod: Error trying to parse location from journal screen. [locationName = " + locationName + "]\nKNOWN LOCATIONS:\n" + DebugGetKnownLocationsList());
+                                Debug.Log("QudUX Mod: Error trying to parse location from journal screen. [locationName = "
+                                    + locationName + "]\nKNOWN LOCATIONS:\n" + DebugGetKnownLocationsList());
                                 this.ErroredJournalScreenStrings.Add(locationName);
                             }
                             continue;
@@ -72,8 +67,9 @@ namespace Egocarib.Code
 
                         JournalFacts jFacts = new JournalFacts();
                         bool bFactsIdentified = false;
-                        if (this.CachedRelevantJournalNotesByName[locationName].Count == 1) //only one matching entry, no need to parse the directions
+                        if (this.CachedRelevantJournalNotesByName[locationName].Count == 1)
                         {
+                            //only one matching entry, no need to parse the directions
                             jFacts = this.CachedRelevantJournalNotesByName[locationName][0];
                             bFactsIdentified = true;
                         }
@@ -152,7 +148,8 @@ namespace Egocarib.Code
                 {
                     if (this._directionsTo == String.Empty)
                     {
-                        this._directionsTo = LoreGenerator.GenerateLandmarkDirectionsTo(this.entry.zoneid, !string.IsNullOrEmpty(XRLCore.Core.Game.GetStringGameState("villageZeroName", string.Empty)));
+                        this._directionsTo = LoreGenerator.GenerateLandmarkDirectionsTo(this.entry.zoneid,
+                            !string.IsNullOrEmpty(XRLCore.Core.Game.GetStringGameState("villageZeroName", string.Empty)));
                     }
                     return this._directionsTo;
                 }
@@ -163,7 +160,8 @@ namespace Egocarib.Code
                 {
                     if (this._hasBeenVisited == null)
                     {
-                        this._hasBeenVisited = (XRLCore.Core.Game.ZoneManager.CachedZones.ContainsKey(this.entry.zoneid) || Egcb_JournalUtilities.FrozenZoneDataExists(this.entry.zoneid));
+                        this._hasBeenVisited = XRLCore.Core.Game.ZoneManager.CachedZones.ContainsKey(this.entry.zoneid)
+                            || Egcb_JournalUtilities.FrozenZoneDataExists(this.entry.zoneid);
                     }
                     return (bool)this._hasBeenVisited;
                 }
@@ -176,7 +174,7 @@ namespace Egocarib.Code
         {
             if (this.LocationTabChar.Char == 'L')
             {
-                ushort fontColorCode = ConsoleLib.Console.ColorUtility.GetForeground(this.LocationTabChar.Attributes); //22 = W  (there's no easy map to read from for this)
+                ushort fontColorCode = ConsoleLib.Console.ColorUtility.GetForeground(this.LocationTabChar.Attributes);
                 if (fontColorCode == this.WChar)
                 {
                     return true; //yellow "L" appears, meaning the "Locations" tab is highlighted in yellow in the journal and active
@@ -193,26 +191,13 @@ namespace Egocarib.Code
             {
                 if (jmn.revealed) //player knows about it
                 {
-                    bool zoneWasVisited = (XRLCore.Core.Game.ZoneManager.CachedZones.ContainsKey(jmn.zoneid) || Egcb_JournalUtilities.FrozenZoneDataExists(jmn.zoneid));
+                    bool zoneWasVisited = (XRLCore.Core.Game.ZoneManager.CachedZones.ContainsKey(jmn.zoneid)
+                        || Egcb_JournalUtilities.FrozenZoneDataExists(jmn.zoneid));
                     retVal += "\n  " + jmn.text + "  [visited? = " + zoneWasVisited + "]";
                     retVal += " [formatStripped = " + ConsoleLib.Console.ColorUtility.StripFormatting(jmn.text) + "]";
                 }
             }
             return retVal;
         }
-
-        //public static void RunTests()
-        //{
-        //    List<JournalMapNote> mapNotes = JournalAPI.MapNotes;
-        //    foreach (JournalMapNote jmn in mapNotes)
-        //    {
-        //        if (jmn.revealed) //player knows about it
-        //        {
-        //            bool zoneWasVisited = (XRLCore.Core.Game.ZoneManager.CachedZones.ContainsKey(jmn.zoneid) || Egcb_JournalUtilities.FrozenZoneDataExists(jmn.zoneid));
-        //            //loading the zone takes a lot of processing power & time, so we can't really do that, just a simple flag if the zone ever was built or not is probably best.
-        //            Debug.Log("QudUX Mod: mapNoteDump:\n    displayname\n    ------------\n" + jmn.GetDisplayText() + "\n\n    zoneid\n    -------------\n" + jmn.zoneid
-        //                    + "\n\n    zoneinfo\n    ------------\n    zone ever existed? = " + zoneWasVisited);
-        //        }
-        //    }
     }
 }

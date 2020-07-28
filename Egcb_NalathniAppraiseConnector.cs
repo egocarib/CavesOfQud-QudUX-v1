@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Reflection;
+using UnityEngine;
 using XRL;
 using XRL.Core;
 using XRL.World.Skills;
 using GameObject = XRL.World.GameObject;
-using UnityEngine;
 
 namespace Egocarib.Code
 {
