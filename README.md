@@ -1,3 +1,7 @@
+**This repository holds an outdated version of QudUX.**
+
+**For the latest version, go here: https://github.com/egocarib/CavesOfQud-QudUX-v2**
+
 # CavesOfQud-QudUX
 Some minor tweaks and improvements to Qud menus/etc.
 
